@@ -1,3 +1,5 @@
+import streamlit as st
+
 # MBTI to job mapping with emojis
 mbti_jobs = {
     "INTJ": ["🔬 연구원 (Research Scientist)", "📊 데이터 분석가 (Data Analyst)", "🛠️ 전략 컨설턴트 (Strategy Consultant)"],

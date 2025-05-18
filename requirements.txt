@@ -1,12 +1,8 @@
 plotly
 folium
 koreanize_matplotlib
-streamlit==1.29.0  # 또는 1.25.0, 1.33.0 등 다른 버전으로 시도
+streamlit==1.39.0  # 또는 1.25.0, 1.33.0 등 다른 버전으로 시도
 streamlit-drawable-canvas==0.9.3
-Pillow>=10.0.0
-numpy
-requests
+Pillow==10.4.0
+numpy==1.26.4
 pygame==2.6.0
-streamlit==1.39.0
-pillow==10.4.0  # For image processing if needed
-numpy==1.26.4   # For potential array operations

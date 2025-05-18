@@ -184,10 +184,12 @@ def end_game(cleared_all=False, timed_out=False):
 
 # --- Drawing Functions ---
 def draw_game_board_image(canvas_width_px, canvas_height_px):
-    st.write("--- `draw_game_board_image` 함수 시작 ---") # DEBUG
-
-    img = Image.new("RGB", (canvas_width_px, canvas_height_px), color="#FFFCF0")
+    st.write("--- `draw_game_board_image` (단순 테스트 버전) 시작 ---")
+    img = Image.new("RGB", (canvas_width_px, canvas_height_px), color="blue") # 파란색 단색 이미지
     draw = ImageDraw.Draw(img)
+    draw.text((10,10), "Test Canvas", fill="white", font=get_font(30)) # 기본 폰트 사용
+    st.write("--- `draw_game_board_image` (단순 테스트 버전) 종료 ---")
+    return img
 
     cell_width = canvas_width_px / COLS
     cell_height = canvas_height_px / ROWS

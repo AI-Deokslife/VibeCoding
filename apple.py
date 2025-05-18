@@ -4,7 +4,7 @@ from PIL import Image, ImageDraw, ImageFont, UnidentifiedImageError # Unidentifi
 import numpy as np
 import time
 import math
-import os
+import os # 파일 경로 확인 등을 위해 추가
 import requests # URL 요청을 위해 추가
 from io import BytesIO # URL에서 받은 이미지 데이터를 처리하기 위해 추가
 
@@ -12,13 +12,12 @@ from io import BytesIO # URL에서 받은 이미지 데이터를 처리하기 �
 ROWS = 10
 COLS = 17
 GAME_TIME_SECONDS = 120
-CLICK_THRESHOLD_DISTANCE = 10
-CLICK_THRESHOLD_TIME_MS = 300
+# CLICK_THRESHOLD_DISTANCE, CLICK_THRESHOLD_TIME_MS 등은 현재 코드에서 직접 사용 안함
 
 # --- Asset Paths & URLs ---
 APPLE_IMAGE_URL = "https://em-content.zobj.net/source/apple/225/red-apple_1f34e.png" # 사과 이미지 URL
-FONT_PATH = "Jua-Regular.ttf" # 폰트 파일은 로컬에 있어야 함
-HIGHSCORE_FILE = "apple_팡팡_highscore.txt"
+FONT_PATH = "Jua-Regular.ttf" # 이 변수는 아래 get_font에서 직접 사용 안하나, 참고용으로 남겨둘 수 있음
+HIGHSCORE_FILE = "apple_팡팡_highscore.txt" # 최고 점수 저장 파일
 
 # --- Helper Functions ---
 def clamp(min_val, val, max_val):
@@ -29,30 +28,25 @@ def load_high_score():
         try:
             with open(HIGHSCORE_FILE, "r") as f:
                 return int(f.read())
-        except ValueError:
-            return 0
+        except ValueError: return 0
     return 0
 
 def save_high_score(score):
-    with open(HIGHSCORE_FILE, "w") as f:
-        f.write(str(score))
+    with open(HIGHSCORE_FILE, "w") as f: f.write(str(score))
 
 def get_font(size):
-    font_paths_to_try = [FONT_PATH]
-    if os.name == 'nt':
-        font_paths_to_try.extend(["malgun.ttf", "arial.ttf"])
-    else:
-        font_paths_to_try.extend(["DejaVuSans.ttf", "Arial.ttf"])
-
-    for path in font_paths_to_try:
-        try:
-            return ImageFont.truetype(path, size)
-        except IOError:
-            st.info(f"폰트 '{path}' 로드 시도 실패. 다음 폰트를 시도합니다.")
-        except Exception as e:
-            st.info(f"폰트 '{path}' 로드 중 오류: {e}. 다음 폰트를 시도합니다.")
-    st.warning(f"지정된 폰트들을 로드할 수 없습니다 ('{FONT_PATH}' 등). Pillow 기본 제공 폰트를 사용합니다.")
-    return ImageFont.load_default()
+    # 사용자가 기본 폰트도 괜찮다고 했으므로, Pillow 기본 폰트를 사용합니다.
+    # st.info(f"Pillow 기본 폰트 요청 (요청 크기: {size})") # 디버깅 시 필요하면 주석 해제
+    try:
+        # Pillow 10.0.0 부터 size 인자 지원
+        return ImageFont.load_default(size=size)
+    except TypeError:
+        # Pillow < 10.0.0 에서는 size 인자 없음
+        # st.info("Pillow < 10.0.0, load_default()는 size 인자를 지원하지 않아 기본 크기로 로드됩니다.")
+        return ImageFont.load_default()
+    except Exception as e:
+        st.warning(f"ImageFont.load_default()에서 오류 발생: {e}. Pillow 기본(아주 작은) 폰트 사용.")
+        return ImageFont.load_default()
 
 
 # --- Game State Initialization ---
@@ -69,7 +63,8 @@ def initialize_game_state():
         st.session_state.last_canvas_result = None
         st.session_state.game_over_message = "게임 종료!"
 
-# --- Game Logic Functions --- (이전과 동일하게 유지)
+
+# --- Game Logic Functions ---
 def create_apples():
     apples_grid = []
     for r in range(ROWS):
@@ -93,15 +88,11 @@ def get_apple_at(r, c):
     return None
 
 def are_apples_connectable(apple1_pos, apple2_pos):
-    r1, c1 = apple1_pos
-    r2, c2 = apple2_pos
-    apple1 = get_apple_at(r1, c1)
-    apple2 = get_apple_at(r2, c2)
-    if not apple1 or not apple2 or (r1 == r2 and c1 == c2) or not apple2['isActive']:
-        return False
+    r1, c1 = apple1_pos; r2, c2 = apple2_pos
+    apple1 = get_apple_at(r1, c1); apple2 = get_apple_at(r2, c2)
+    if not apple1 or not apple2 or (r1 == r2 and c1 == c2) or not apple2['isActive']: return False
     dRow = r2 - r1; dCol = c2 - c1
-    is_horizontal = dRow == 0 and dCol != 0
-    is_vertical = dCol == 0 and dRow != 0
+    is_horizontal = dRow == 0 and dCol != 0; is_vertical = dCol == 0 and dRow != 0
     is_diagonal = abs(dRow) == abs(dCol) and dRow != 0
     if not (is_horizontal or is_vertical or is_diagonal): return False
     step_row = np.sign(dRow); step_col = np.sign(dCol)
@@ -115,16 +106,12 @@ def are_apples_connectable(apple1_pos, apple2_pos):
 def process_selected_apples(selected_positions):
     removed_count = 0
     if not isinstance(selected_positions, list) or not all(isinstance(pos, tuple) and len(pos) == 2 for pos in selected_positions):
-        st.warning(f"잘못된 형식의 selected_positions: {selected_positions}")
-        return
+        st.warning(f"잘못된 형식의 selected_positions: {selected_positions}"); return
     for r_idx, c_idx in selected_positions:
         apple = get_apple_at(r_idx, c_idx)
-        if apple and apple['isActive']:
-            apple['isActive'] = False
-            removed_count += 1
+        if apple and apple['isActive']: apple['isActive'] = False; removed_count += 1
     if removed_count > 0: st.session_state.score += removed_count
-    st.session_state.selected_apples_by_click = []
-    st.session_state.current_click_sum = 0
+    st.session_state.selected_apples_by_click = []; st.session_state.current_click_sum = 0
     for r in range(ROWS):
         for c in range(COLS):
             apple = get_apple_at(r,c)
@@ -138,8 +125,7 @@ def check_all_apples_cleared():
         for r in range(ROWS):
             for c in range(COLS):
                 apple = get_apple_at(r,c)
-                if apple and apple['isActive']:
-                    all_inactive = False; break
+                if apple and apple['isActive']: all_inactive = False; break
             if not all_inactive: break
         if all_inactive: end_game(cleared_all=True)
 
@@ -151,8 +137,7 @@ def handle_apple_click_logic(r, c):
             apple_to_clear = get_apple_at(row_idx, col_idx)
             if apple_to_clear: apple_to_clear['highlighted'] = False
     if not clicked_apple_obj or not clicked_apple_obj['isActive']:
-        st.session_state.selected_apples_by_click = []
-        st.session_state.current_click_sum = 0
+        st.session_state.selected_apples_by_click = []; st.session_state.current_click_sum = 0
         return
     clicked_apple_pos = (r, c)
     if clicked_apple_pos in st.session_state.selected_apples_by_click:
@@ -175,25 +160,20 @@ def handle_apple_click_logic(r, c):
     if st.session_state.current_click_sum == 10 and len(st.session_state.selected_apples_by_click) > 0 :
         process_selected_apples(list(st.session_state.selected_apples_by_click))
     elif st.session_state.current_click_sum > 10:
-        st.session_state.selected_apples_by_click = []
-        st.session_state.current_click_sum = 0
+        st.session_state.selected_apples_by_click = []; st.session_state.current_click_sum = 0
         for row_idx in range(ROWS):
             for col_idx in range(COLS):
                 apple_to_clear = get_apple_at(row_idx, col_idx)
                 if apple_to_clear: apple_to_clear['highlighted'] = False
 
 def start_game():
-    st.session_state.game_state = "playing"
-    st.session_state.is_game_active = True
-    st.session_state.score = 0
-    create_apples()
-    st.session_state.game_start_time = time.time()
-    st.session_state.game_over_message = "게임 종료!"
+    st.session_state.game_state = "playing"; st.session_state.is_game_active = True
+    st.session_state.score = 0; create_apples()
+    st.session_state.game_start_time = time.time(); st.session_state.game_over_message = "게임 종료!"
 
 def end_game(cleared_all=False, timed_out=False):
     if not st.session_state.is_game_active and not cleared_all: return
-    st.session_state.is_game_active = False
-    st.session_state.game_state = "game_over"
+    st.session_state.is_game_active = False; st.session_state.game_state = "game_over"
     if st.session_state.score > st.session_state.high_score:
         st.session_state.high_score = st.session_state.score
         save_high_score(st.session_state.high_score)
@@ -204,6 +184,8 @@ def end_game(cleared_all=False, timed_out=False):
 
 # --- Drawing Functions ---
 def draw_game_board_image(canvas_width_px, canvas_height_px):
+    st.write("--- `draw_game_board_image` 함수 시작 ---") # DEBUG
+
     img = Image.new("RGB", (canvas_width_px, canvas_height_px), color="#FFFCF0")
     draw = ImageDraw.Draw(img)
 
@@ -211,76 +193,89 @@ def draw_game_board_image(canvas_width_px, canvas_height_px):
     cell_height = canvas_height_px / ROWS
 
     apple_img_pil = None
+    st.write(f"1. 이미지 URL에서 로딩 시도: {APPLE_IMAGE_URL}") # DEBUG
     try:
         response = requests.get(APPLE_IMAGE_URL, timeout=10) # 10초 타임아웃
+        st.write(f"2. URL 응답 상태 코드: {response.status_code}") # DEBUG
         response.raise_for_status()  # HTTP 오류 발생 시 예외 발생 (4xx, 5xx 상태 코드)
-        # BytesIO를 사용하여 메모리 내의 바이트 데이터를 파일처럼 처리
         image_bytes = BytesIO(response.content)
         apple_img_pil = Image.open(image_bytes).convert("RGBA")
-    except requests.exceptions.RequestException as e:
-        st.error(f"사과 이미지를 URL에서 가져오는 중 네트워크 오류 발생 ({APPLE_IMAGE_URL}): {e}")
-    except UnidentifiedImageError: # Pillow가 이미지 파일을 식별할 수 없을 때
-        st.error(f"URL에서 가져온 파일이 유효한 이미지가 아닙니다 ({APPLE_IMAGE_URL}). 응답 내용: {response.content[:200]}") # 내용 일부 표시
+        st.write(f"3. PIL 이미지 객체 생성 성공! 크기: {apple_img_pil.size if apple_img_pil else 'N/A'}, 모드: {apple_img_pil.mode if apple_img_pil else 'N/A'}") # DEBUG
+    except requests.exceptions.Timeout:
+        st.write("### 오류: 이미지 URL 요청 시간 초과 ###") # DEBUG
+    except requests.exceptions.HTTPError as http_err:
+        st.write(f"### 오류: HTTP 에러 발생 - {http_err} (상태 코드: {getattr(http_err.response, 'status_code', 'N/A')}) ###") # DEBUG
+    except requests.exceptions.RequestException as req_err:
+        st.write(f"### 오류: 이미지 URL 요청 중 네트워크 오류 - {req_err} ###") # DEBUG
+    except UnidentifiedImageError:
+        st.write(f"### 오류: URL에서 가져온 파일이 유효한 이미지가 아님 - {APPLE_IMAGE_URL} ###") # DEBUG
     except Exception as e:
-        st.error(f"사과 이미지 URL({APPLE_IMAGE_URL}) 처리 중 알 수 없는 오류 발생: {e}")
+        st.write(f"### 오류: 이미지 처리 중 알 수 없는 문제 발생 - {e} ###") # DEBUG
+    
+    st.write(f"4. `apple_img_pil` 객체 상태: {'PIL 이미지 객체' if apple_img_pil else 'None'}") # DEBUG
 
-    font_size = int(min(cell_width, cell_height) * 0.35)
-    font = get_font(font_size)
+    font_size_for_calc = int(min(cell_width, cell_height) * 0.35)
+    font = get_font(font_size_for_calc)
 
     if apple_img_pil is None:
+        st.write("5. `apple_img_pil`이 None이므로, 캔버스에 '로드 실패' 메시지를 그립니다.") # DEBUG
         error_font_size = int(min(canvas_width_px, canvas_height_px) * 0.05)
         if error_font_size < 10: error_font_size = 10
         error_font = get_font(error_font_size)
         draw.text((10, 10), "사과 이미지 로드 실패(URL)!", fill="red", font=error_font)
 
-    if not st.session_state.apples:
-        st.warning("사과 데이터가 없습니다. 게임을 다시 시작해보세요.")
-        return img
+    if not st.session_state.apples: # 초기화 안됐거나 비었을 수 있음
+        st.write("### 경고: st.session_state.apples 데이터가 비어있거나 없습니다! ###") # DEBUG
+        # return img # 사과 데이터 없어도 빈 보드는 반환
+    
+    st.write(f"6. 사과 그리기 시작 (st.session_state.apples에 {len(st.session_state.apples) if st.session_state.apples and isinstance(st.session_state.apples, list) else 0}개 행 데이터 있음)") # DEBUG
 
     for r_idx in range(ROWS):
         for c_idx in range(COLS):
             apple_info = get_apple_at(r_idx, c_idx)
             if apple_info and apple_info["isActive"]:
-                x0 = c_idx * cell_width; y0 = r_idx * cell_height
-                x1 = x0 + cell_width; y1 = y0 + cell_height
+                x0=c_idx*cell_width; y0=r_idx*cell_height; x1=x0+cell_width; y1=y0+cell_height
                 padding = 0.10 * min(cell_width, cell_height)
 
                 if apple_img_pil:
-                    scaled_apple_width = int(cell_width - 2 * padding)
-                    scaled_apple_height = int(cell_height - 2 * padding)
-                    if scaled_apple_width > 0 and scaled_apple_height > 0:
+                    s_w = int(cell_width-2*padding); s_h = int(cell_height-2*padding)
+                    if s_w > 0 and s_h > 0:
                         try:
-                            resized_apple = apple_img_pil.resize((scaled_apple_width, scaled_apple_height), Image.Resampling.LANCZOS)
-                            img.paste(resized_apple, (int(x0 + padding), int(y0 + padding)), resized_apple)
+                            resized_apple = apple_img_pil.resize((s_w, s_h), Image.Resampling.LANCZOS)
+                            img.paste(resized_apple, (int(x0+padding), int(y0+padding)), resized_apple)
                         except Exception as e_paste:
-                            st.warning(f"사과 이미지 붙여넣기 오류 (r:{r_idx},c:{c_idx}): {e_paste}")
-                            draw.rectangle([x0 + padding, y0 + padding, x1 - padding, y1 - padding], fill="lightcoral")
-                else:
-                    draw.rectangle([x0 + padding, y0 + padding, x1 - padding, y1 - padding], fill="red")
-
+                            # st.write(f"    ! 사과 ({r_idx},{c_idx}) 이미지 붙여넣기 오류: {e_paste}") # 너무 많은 로그를 유발
+                            draw.rectangle([x0+padding,y0+padding,x1-padding,y1-padding], fill="lightcoral")
+                elif apple_img_pil is None: # 이미지 로드 실패 시 빨간 사각형으로 대체
+                    draw.rectangle([x0+padding,y0+padding,x1-padding,y1-padding], fill="red")
+                
                 text = str(apple_info["number"])
                 try:
-                    bbox = draw.textbbox((0,0), text, font=font)
+                    bbox = draw.textbbox((x0,y0), text, font=font) # 임시 위치 (x0,y0)
                     text_width = bbox[2] - bbox[0]; text_height = bbox[3] - bbox[1]
-                except AttributeError:
+                except AttributeError: # Pillow < 10
                     text_width, text_height = draw.textsize(text, font=font)
-                
-                text_x = x0 + (cell_width - text_width) / 2
-                text_y = y0 + (cell_height - text_height) / 2 - (font_size * 0.1)
-                shadow_offset = 2
-                draw.text((text_x + shadow_offset, text_y + shadow_offset), text, font=font, fill=(0,0,0,150))
-                draw.text((text_x, text_y), text, font=font, fill="white")
+                except TypeError: # font가 None인 경우 등
+                    st.write(f"### 경고: 텍스트 크기 계산 중 폰트 오류 (r:{r_idx},c:{c_idx}) ###")
+                    text_width, text_height = 10, 10 # 임시 크기
 
-                if apple_info.get("highlighted", False):
-                    draw.rectangle([x0+2, y0+2, x1-2, y1-2], outline="#FFD700", width=3)
+                text_x = x0 + (cell_width - text_width) / 2
+                text_y = y0 + (cell_height - text_height) / 2
+                
+                shadow_offset=2
+                draw.text((text_x+shadow_offset,text_y+shadow_offset),text,font=font,fill=(0,0,0,150))
+                draw.text((text_x,text_y),text,font=font,fill="white")
+
+                if apple_info.get("highlighted",False):
+                    draw.rectangle([x0+2,y0+2,x1-2,y1-2],outline="#FFD700",width=3)
+    
+    st.write("--- `draw_game_board_image` 함수 종료, 이미지 객체 반환 ---") # DEBUG
     return img
 
-# --- UI Rendering Functions --- (이전과 동일하게 유지)
+# --- UI Rendering Functions ---
 def render_start_screen():
     st.markdown(f"""
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Jua&display=swap');
-        /* .stApp {{ background-color: #FFF0F5; }} */ /* 전역 스타일로 이동 */
         .start-screen-container {{ display: flex; flex-direction: column; align-items: center; justify-content: center; height: 80vh; font-family: 'Jua', sans-serif;}}
         .big-apple-title {{font-size: clamp(2.5rem, 8vw, 4rem); color: #FF6B9D; text-shadow: 2px 2px 0 #FFF; margin-bottom: 20px;}}
         .author-text {{font-size: clamp(1rem, 3vw, 1.2rem); color: #FF8C42; margin-bottom: 30px;}}
@@ -295,10 +290,10 @@ def render_start_screen():
             start_game(); st.rerun()
 
 def render_game_ui_and_board(canvas_width_css, canvas_height_css):
-    st.markdown("<h1 style='text-align: center; color: #FF6B9D; font-family: Jua, sans-serif;'>사과팡팡!</h1>", unsafe_allow_html=True)
+    st.markdown("<h1 style='text-align: center; color: #FF6B9D;'>사과팡팡!</h1>", unsafe_allow_html=True)
     col1, col2 = st.columns(2)
-    with col1: st.markdown(f"<p style='font-family:Jua; font-size:1.2em;'>최고점수: <span style='color:#FF8C42; font-weight:bold;'>{st.session_state.high_score}</span></p>", unsafe_allow_html=True)
-    with col2: st.markdown(f"<p style='font-family:Jua; font-size:1.2em;'>냠냠: <span style='color:#FF8C42; font-weight:bold;'>{st.session_state.score}</span></p>", unsafe_allow_html=True)
+    with col1: st.markdown(f"<p style='font-size:1.2em;'>최고점수: <span style='color:#FF8C42; font-weight:bold;'>{st.session_state.high_score}</span></p>", unsafe_allow_html=True)
+    with col2: st.markdown(f"<p style='font-size:1.2em;'>냠냠: <span style='color:#FF8C42; font-weight:bold;'>{st.session_state.score}</span></p>", unsafe_allow_html=True)
     
     elapsed_time = time.time() - st.session_state.game_start_time
     remaining_time = GAME_TIME_SECONDS - elapsed_time
@@ -310,12 +305,30 @@ def render_game_ui_and_board(canvas_width_css, canvas_height_css):
     st.caption(f"남은 시간: {int(remaining_time)}초")
     if st.button("다시하기", key="ui_restart_button"): start_game(); st.rerun()
 
+    st.write("`render_game_ui_and_board`: `draw_game_board_image` 호출 직전") # DEBUG
     bg_image_pil = draw_game_board_image(canvas_width_css, canvas_height_css)
-    if bg_image_pil is None: st.error("게임 보드 이미지를 생성할 수 없습니다."); return
+    st.write(f"`render_game_ui_and_board`: `draw_game_board_image` 반환값 타입: {type(bg_image_pil)}") # DEBUG
+    if bg_image_pil is None: 
+        st.error("### `draw_game_board_image`가 None을 반환했습니다! 캔버스를 그릴 수 없습니다. ###") # DEBUG
+        return # 여기서 중단하여 추가 오류 방지
     
-    drawing_mode = "rect"; stroke_color="rgba(0,0,0,0)"; fill_color="rgba(0,0,0,0)" # 투명하게
+    drawing_mode = "rect"; stroke_color="rgba(0,0,0,0)"; fill_color="rgba(0,0,0,0)"
     canvas_key = f"game_canvas_{st.session_state.score}_{len(st.session_state.selected_apples_by_click)}_{st.session_state.game_start_time}"
-    canvas_result = st_canvas(fill_color=fill_color, stroke_width=3, stroke_color=stroke_color, background_image=bg_image_pil, update_streamlit=True, width=canvas_width_css, height=canvas_height_css, drawing_mode=drawing_mode, key=canvas_key, display_toolbar=False)
+    
+    st.write(f"`render_game_ui_and_board`: `st_canvas` 호출 직전. 배경 이미지 유효성: {isinstance(bg_image_pil, Image.Image)}") # DEBUG
+    canvas_result = st_canvas(
+        fill_color=fill_color, 
+        stroke_width=3, 
+        stroke_color=stroke_color, 
+        background_image=bg_image_pil, 
+        update_streamlit=True, 
+        width=canvas_width_css, 
+        height=canvas_height_css, 
+        drawing_mode=drawing_mode, 
+        key=canvas_key, 
+        display_toolbar=False
+    )
+    st.write("`render_game_ui_and_board`: `st_canvas` 호출 완료") # DEBUG
     
     cell_width_px = canvas_width_css / COLS; cell_height_px = canvas_height_css / ROWS
     if canvas_result and canvas_result.json_data and canvas_result.json_data.get("objects"):
@@ -329,20 +342,20 @@ def render_game_ui_and_board(canvas_width_css, canvas_height_css):
                     width = last_object.get("width", 0); height = last_object.get("height", 0)
                     is_click_intent = width < (cell_width_px*0.8) and height < (cell_height_px*0.8)
                     if is_click_intent:
-                        clicked_col = int(left / cell_width_px); clicked_row = int(top / cell_height_px)
+                        clicked_col=int(left/cell_width_px); clicked_row=int(top/cell_height_px)
                         if 0 <= clicked_row < ROWS and 0 <= clicked_col < COLS:
-                            handle_apple_click_logic(clicked_row, clicked_col); st.rerun()
-                    else:
-                        drag_start_col=int(left/cell_width_px); drag_start_row=int(top/cell_height_px)
-                        drag_end_col=int((left+width)/cell_width_px); drag_end_row=int((top+height)/cell_height_px)
-                        drag_start_row=clamp(0,drag_start_row,ROWS-1); drag_end_row=clamp(0,drag_end_row,ROWS-1)
-                        drag_start_col=clamp(0,drag_start_col,COLS-1); drag_end_col=clamp(0,drag_end_col,COLS-1)
+                            handle_apple_click_logic(clicked_row,clicked_col); st.rerun()
+                    else: # Drag
+                        drag_s_c=int(left/cell_width_px); drag_s_r=int(top/cell_height_px)
+                        drag_e_c=int((left+width)/cell_width_px); drag_e_r=int((top+height)/cell_height_px)
+                        drag_s_r=clamp(0,drag_s_r,ROWS-1); drag_e_r=clamp(0,drag_e_r,ROWS-1)
+                        drag_s_c=clamp(0,drag_s_c,COLS-1); drag_e_c=clamp(0,drag_e_c,COLS-1)
                         selected_in_drag=[]; current_drag_sum=0
-                        for r in range(min(drag_start_row,drag_end_row),max(drag_start_row,drag_end_row)+1):
-                            for c in range(min(drag_start_col,drag_end_col),max(drag_start_col,drag_end_col)+1):
-                                apple=get_apple_at(r,c)
+                        for r_drag in range(min(drag_s_r,drag_e_r),max(drag_s_r,drag_e_r)+1): # 변수명 r -> r_drag
+                            for c_drag in range(min(drag_s_c,drag_e_c),max(drag_s_c,drag_e_c)+1): # 변수명 c -> c_drag
+                                apple=get_apple_at(r_drag,c_drag)
                                 if apple and apple['isActive']:
-                                    selected_in_drag.append((r,c)); current_drag_sum+=apple['number']
+                                    selected_in_drag.append((r_drag,c_drag)); current_drag_sum+=apple['number']
                         if current_drag_sum==10 and selected_in_drag:
                             process_selected_apples(selected_in_drag); st.rerun()
 
@@ -369,7 +382,7 @@ st.set_page_config(page_title="사과팡팡!", layout="centered")
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Jua&display=swap');
-    body, .stApp, .stMarkdown p, .stMarkdown li, h1, h2, h3, h4, h5, h6 {
+    body, .stApp, .stMarkdown p, .stMarkdown li, h1, h2, h3, h4, h5, h6, .stCaption {
         font-family: 'Jua', sans-serif !important;
     }
     .stApp { background-color: #FFF0F5 !important; }
@@ -389,9 +402,12 @@ initialize_game_state()
 if st.session_state.game_state == "start_screen": render_start_screen()
 elif st.session_state.game_state == "playing":
     CANVAS_CONTAINER_WIDTH_CSS = 600
-    CANVAS_CONTAINER_HEIGHT_CSS = int(CANVAS_CONTAINER_WIDTH_CSS * (ROWS / COLS))
-    if CANVAS_CONTAINER_HEIGHT_CSS > 500:
+    CANVAS_CONTAINER_HEIGHT_CSS = int(CANVAS_CONTAINER_WIDTH_CSS * (ROWS/COLS))
+    if CANVAS_CONTAINER_HEIGHT_CSS > 500: # Max height
         CANVAS_CONTAINER_HEIGHT_CSS = 500
-        CANVAS_CONTAINER_WIDTH_CSS = int(CANVAS_CONTAINER_HEIGHT_CSS * (COLS / ROWS))
+        CANVAS_CONTAINER_WIDTH_CSS = int(CANVAS_CONTAINER_HEIGHT_CSS * (COLS/ROWS))
+    
+    st.write(f"페이지 라우팅: 'playing' 상태. 캔버스 크기: {CANVAS_CONTAINER_WIDTH_CSS}x{CANVAS_CONTAINER_HEIGHT_CSS}") # DEBUG
     render_game_ui_and_board(CANVAS_CONTAINER_WIDTH_CSS, CANVAS_CONTAINER_HEIGHT_CSS)
+
 elif st.session_state.game_state == "game_over": render_game_over_screen()

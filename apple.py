@@ -308,16 +308,37 @@ def render_game_ui_and_board(canvas_width_css, canvas_height_css):
     if st.button("다시하기", key="ui_restart_button"): start_game(); st.rerun()
 
     st.write("`render_game_ui_and_board`: `draw_game_board_image` 호출 직전") # DEBUG
-    bg_image_pil = draw_game_board_image(canvas_width_css, canvas_height_css)
+    bg_image_pil = draw_game_board_image(canvas_width_css, canvas_height_css) # 단순 테스트 버전 호출
     st.write(f"`render_game_ui_and_board`: `draw_game_board_image` 반환값 타입: {type(bg_image_pil)}") # DEBUG
-    if bg_image_pil is None: 
-        st.error("### `draw_game_board_image`가 None을 반환했습니다! 캔버스를 그릴 수 없습니다. ###") # DEBUG
-        return # 여기서 중단하여 추가 오류 방지
     
-    drawing_mode = "rect"; stroke_color="rgba(0,0,0,0)"; fill_color="rgba(0,0,0,0)"
-    canvas_key = f"game_canvas_{st.session_state.score}_{len(st.session_state.selected_apples_by_click)}_{st.session_state.game_start_time}"
-    
+    if bg_image_pil:
+        st.write("### st.image로 배경 이미지 직접 표시 시도: ###") # DEBUG
+        try:
+            st.image(bg_image_pil, caption="단순 테스트 배경 (st.image로 표시)") # 이 이미지가 보이는지 확인!
+            st.write("### st.image 표시 성공! ###") # DEBUG
+        except Exception as e_st_image:
+            st.error(f"### st.image로 표시 중 오류: {e_st_image} ###") # DEBUG
+    else:
+        st.error("### bg_image_pil이 None이라 st.image로 표시할 수 없습니다. ###") # DEBUG
+
     st.write(f"`render_game_ui_and_board`: `st_canvas` 호출 직전. 배경 이미지 유효성: {isinstance(bg_image_pil, Image.Image)}") # DEBUG
+    if bg_image_pil is None: # 혹시 모를 경우 대비
+         st.error("### `draw_game_board_image`가 None을 반환하여 `st_canvas`를 호출할 수 없습니다. ###")
+         return
+
+    canvas_result = st_canvas(
+        fill_color="rgba(0,0,0,0)", 
+        stroke_width=3, 
+        stroke_color="rgba(0,0,0,0)", 
+        background_image=bg_image_pil, # 단순 테스트 버전의 파란색 이미지 전달
+        update_streamlit=True, 
+        width=canvas_width_css, 
+        height=canvas_height_css, 
+        drawing_mode="rect", 
+        key=f"game_canvas_test_{st.session_state.game_start_time}", # 키 변경 
+        display_toolbar=False
+    )
+    st.write("`render_game_ui_and_board`: `st_canvas` 호출 완료") # DEBUG
     canvas_result = st_canvas(
         fill_color=fill_color, 
         stroke_width=3, 

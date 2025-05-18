@@ -224,4 +224,3 @@ if st.button("결과 보기", use_container_width=True):
 # 앱 정보
 st.markdown("---")
 st.caption("Made with 💖 by Streamlit | 데이터는 예시이며, 실제 진로 선택 시 전문가와 상담하세요.")
-```

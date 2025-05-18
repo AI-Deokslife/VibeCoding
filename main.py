@@ -24,7 +24,7 @@ mbti_data = {
     "ENTJ": {
         "jobs": ["🚀 스타트업 창업가", "📈 경영 컨설턴트", "🏢 CEO/임원"],
         "environment": [90, 60, 80, 85, 70],
-        imaginable: [
+        "resources": [
             {"title": "Udemy: The Complete Business Plan Course", "url": "https://www.udemy.com/course/the-complete-business-plan-course-includes-50-templates/", "desc": "스타트업 창업을 위한 사업 계획 수립"},
             {"title": "Harvard Business Review: Leadership Articles", "url": "https://hbr.org/topic/leadership", "desc": "경영 컨설팅과 리더십 인사이트"},
         ],
@@ -52,8 +52,8 @@ mbti_data = {
         "jobs": ["🎨 아티스트", "📖 편집자", "🌱 비영리 기획자"],
         "environment": [70, 90, 95, 50, 30],
         "resources": [
-            {"title": "Skillshare: Digital Illustration with Procreate", "url": "https://www.skillshare.com/classes/Digital-Illustration-with-Procreate/123456789", "desc": "아티스트를 위한 디지털 아트 기술"},
-            {"title": "Coursera: Grant Writing for Nonprofits", "url": "https://www.coursera.org/learn/grant-writing", "desc": "비영리 단체 기획을 위한 제안서 작성"},
+            {"title": "Skillshare: Digital Illustration with Procreate", "url": "https://www.skillshare.com/en/classes/digital-illustration-learn-to-use-procreate/1510394683", "desc": "아티스트를 위한 디지털 아트 기술"},
+            {"title": "Coursera: Grant Writing for Nonprofits", "url": "https://www.coursera.org/learn/nonprofit-grant-writing", "desc": "비영리 단체 기획을 위한 제안서 작성"},
         ],
         "motivation": "당신의 꿈은 세상에 색을 더해요! 🎨"
     },
@@ -70,8 +70,8 @@ mbti_data = {
         "jobs": ["🌟 이벤트 플래너", "🌀 마케팅 크리에이터", "🧭 여행 작가"],
         "environment": [80, 70, 95, 55, 45],
         "resources": [
-            {"title": "Udemy: Event Planning 101", "url": "https://www.udemy.com/course/event-planning-101/", "desc": "이벤트 플래너를 위한 기획 기술"},
-            {"title": "Skillshare: Content Marketing Strategy", "url": "https://www.skillshare.com/classes/Content-Marketing-Strategy/987654321", "desc": "마케팅 크리에이터를 위한 콘텐츠 전략"},
+            {"title": "Udemy: Event Planning 101", "url": "https://www.udemy.com/course/event-planning/", "desc": "이벤트 플래너를 위한 기획 기술"},
+            {"title": "Skillshare: Content Marketing Strategy", "url": "https://www.skillshare.com/en/classes/content-strategy-for-social-media-and-content-marketing/2094362559", "desc": "마케팅 크리에이터를 위한 콘텐츠 전략"},
         ],
         "motivation": "당신의 에너지는 세상을 밝게 비춰요! ✨"
     },
@@ -79,8 +79,8 @@ mbti_data = {
         "jobs": ["🛡️ 감사 전문가", "📑 프로젝트 매니저", "📋 품질 관리자"],
         "environment": [80, 85, 60, 95, 65],
         "resources": [
-            {"title": "Coursera: Certified Internal Auditor Prep", "url": "https://www.coursera.org/learn/certified-internal-auditor", "desc": "감사 전문가를 위한 자격증 준비"},
-            {"title": "edX: Project Management with PMI", "url": "https://www.edx.org/course/project-management-with-pmi", "desc": "프로젝트 관리 기술 향상"},
+            {"title": "Coursera: Certified Internal Auditor Prep", "url": "https://www.coursera.org/learn/internal-auditing-part-1", "desc": "감사 전문가를 위한 자격증 준비"},
+            {"title": "edX: Project Management with PMI", "url": "https://www.edx.org/learn/project-management", "desc": "프로젝트 관리 기술 향상"},
         ],
         "motivation": "당신의 꼼꼼함은 성공의 열쇠예요! 🗂️"
     },
@@ -89,7 +89,7 @@ mbti_data = {
         "environment": [90, 75, 70, 80, 40],
         "resources": [
             {"title": "Khan Academy: Health and Medicine", "url": "https://www.khanacademy.org/science/health-and-medicine", "desc": "간호사를 위한 의학 기초"},
-            {"title": "Alison: Social Work Fundamentals", "url": "https://alison.com/course/social-work-fundamentals", "desc": "복지 상담을 위한 기초 기술"},
+            {"title": "Alison: Social Work Fundamentals", "url": "https://alison.com/course/social-work-fundamentals-revised", "desc": "복지 상담을 위한 기초 기술"},
         ],
         "motivation": "당신의 따뜻함은 모두에게 위로가 됩니다! 🫶"
     },
@@ -97,8 +97,8 @@ mbti_data = {
         "jobs": ["🏭 운영 관리자", "👮 법 집행관", "💼 금융 관리자"],
         "environment": [90, 70, 65, 90, 70],
         "resources": [
-            {"title": "Udemy: Operations Management Masterclass", "url": "https://www.udemy.com/course/operations-management-masterclass/", "desc": "운영 관리자를 위한 효율성 기술"},
-            {"title": "Coursera: Financial Management", "url": "https://www.coursera.org/specializations/financial-management", "desc": "금융 관리자를 위한 재무 분석"},
+            {"title": "Udemy: Operations Management Masterclass", "url": "https://www.udemy.com/course/operations-management-a-z/", "desc": "운영 관리자를 위한 효율성 기술"},
+            {"title": "Coursera: Financial Management", "url": "https://www.coursera.org/specializations/finance-for-non-finance-managers", "desc": "금융 관리자를 위한 재무 분석"},
         ],
         "motivation": "당신의 리더십은 질서를 만듭니다! 🏛️"
     },
@@ -107,7 +107,7 @@ mbti_data = {
         "environment": [95, 60, 75, 80, 50],
         "resources": [
             {"title": "Coursera: Event Management Essentials", "url": "https://www.coursera.org/learn/event-management", "desc": "이벤트 코디네이터를 위한 기획 기술"},
-            {"title": "LinkedIn Learning: Retail Management", "url": "https://www.linkedin.com/learning/topics/retail-management", "desc": "소매 관리자를 위한 고객 서비스 기술"},
+            {"title": "LinkedIn Learning: Retail Management", "url": "https://www.linkedin.com/learning/topics/retail", "desc": "소매 관리자를 위한 고객 서비스 기술"},
         ],
         "motivation": "당신의 친화력은 모두를 행복하게 해요! 😊"
     },
@@ -124,8 +124,8 @@ mbti_data = {
         "jobs": ["🎸 뮤지션", "📷 사진 작가", "🛋️ 인테리어 디자이너"],
         "environment": [65, 90, 95, 50, 35],
         "resources": [
-            {"title": "Skillshare: Photography Foundations", "url": "https://www.skillshare.com/classes/Photography-Foundations/123456789", "desc": "사진 작가를 위한 촬영 기법"},
-            {"title": "Domestika: Interior Design Basics", "url": "https://www.domestika.org/en/courses/area/interior-design", "desc": "인테리어 디자이너를 위한 공간 설계"},
+            {"title": "Skillshare: Photography Foundations", "url": "https://www.skillshare.com/en/classes/Photography-Fundamentals-From-Camera-to-Composition/1706729053", "desc": "사진 작가를 위한 촬영 기법"},
+            {"title": "Domestika: Introduction to Interior Design", "url": "https://www.domestika.org/en/courses/103-introduction-to-interior-design", "desc": "인테리어 디자이너를 위한 공간 설계"},
         ],
         "motivation": "당신의 감성은 세상을 아름답게 해요! 🌸"
     },
@@ -133,8 +133,8 @@ mbti_data = {
         "jobs": ["🏎️ 스포츠 코치", "💼 판매 대표", "🎬 스턴트 배우"],
         "environment": [85, 70, 80, 60, 65],
         "resources": [
-            {"title": "Udemy: Sales Strategies and Techniques", "url": "https://www.udemy.com/course/sales-strategies-and-techniques/", "desc": "판매 대표를 위한 세일즈 기술"},
-            {"title": "YouTube: Sports Coaching Tips", "url": "https://www.youtube.com/@coachesonline", "desc": "스포츠 코치를 위한 훈련 방법"},
+            {"title": "Udemy: Sales Strategies and Techniques", "url": "https://www.udemy.com/course/sales-training-practical-sales-techniques/", "desc": "판매 대표를 위한 세일즈 기술"},
+            {"title": "YouTube: The Soccer Coach", "url": "https://www.youtube.com/@TheSoccerCoachTV", "desc": "스포츠 코치를 위한 훈련 방법"},
         ],
         "motivation": "당신의 에너지는 무대를 장악해요! 🔥"
     },
@@ -143,7 +143,7 @@ mbti_data = {
         "environment": [90, 65, 95, 55, 50],
         "resources": [
             {"title": "MasterClass: Natalie Portman’s Acting Techniques", "url": "https://www.masterclass.com/classes/natalie-portman-teaches-acting", "desc": "배우를 위한 연기 기술"},
-            {"title": "YouTube: Just Dance Tutorials", "url": "https://www.youtube.com/@justdance", "desc": "댄서를 위한 안무 연습"},
+            {"title": "YouTube: Dance Tutorials by Matt Steffanina", "url": "https://www.youtube.com/@MattSteffanina", "desc": "댄서를 위한 안무 연습"},
         ],
         "motivation": "당신의 열정은 모두를 사로잡아요! 🎤"
     },

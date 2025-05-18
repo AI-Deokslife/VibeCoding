@@ -1,8 +1,8 @@
 plotly
 folium
 koreanize_matplotlib
-streamlit==1.33.0  # Streamlit 버전을 명시적으로 지정 (2024년 5월 기준 최신 안정 버전 중 하나)
+streamlit==1.33.0
 streamlit-drawable-canvas==0.9.3
-Pillow>=9.0.0
+Pillow>=10.0.0  # Pillow 10 이상 권장 (load_default(size=...) 지원)
 numpy
 requests

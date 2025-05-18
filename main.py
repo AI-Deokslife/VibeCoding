@@ -1,5 +1,4 @@
 import streamlit as st
-import pandas as pd
 import json
 
 # MBTI별 데이터: 직업, 환경 점수, 학습 리소스, 동기부여 메시지
@@ -177,37 +176,24 @@ if st.button("결과 보기", use_container_width=True):
         for job in data["jobs"]:
             st.write(f"- {job}")
 
-        # 직업 환경 분석 차트
+        # 직업 환경 분석 차트 (Plotly 사용으로 변경)
         st.subheader("📊 직업 환경 분석")
-        chart_config = {
-            "type": "radar",
-            "data": {
-                "labels": ["팀워크", "독립성", "창의성", "구조화", "압박감"],
-                "datasets": [{
-                    "label": f"{mbti} 직업 환경 적합도",
-                    "data": data["environment"],
-                    "backgroundColor": "rgba(54, 162, 235, 0.2)",
-                    "borderColor": "#36A2EB",
-                    "pointBackgroundColor": "#36A2EB"
-                }]
-            },
-            "options": {
-                "scales": {
-                    "r": {"beginAtZero": True, "max": 100}
-                }
-            }
-        }
-        st.markdown(
-            f"""
-            <canvas id="environmentChart"></canvas>
-            <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-            <script>
-                const ctx = document.getElementById('environmentChart').getContext('2d');
-                new Chart(ctx, {json.dumps(chart_config)});
-            </script>
-            """,
-            unsafe_allow_html=True,
+        import plotly.graph_objects as go
+        fig = go.Figure(
+            data=[
+                go.Scatterpolar(
+                    r=data["environment"],
+                    theta=["팀워크", "독립성", "창의성", "구조화", "압박감"],
+                    fill="toself",
+                    name=f"{mbti} 직업 환경 적합도",
+                )
+            ],
+            layout=go.Layout(
+                polar=dict(radialaxis=dict(visible=True, range=[0, 100])),
+                showlegend=True,
+            ),
         )
+        st.plotly_chart(fig, use_container_width=True)
 
         # 학습 리소스
         st.subheader("📚 추천 학습 리소스")

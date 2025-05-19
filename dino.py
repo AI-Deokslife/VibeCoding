@@ -179,27 +179,30 @@ with col3:
 keyboard_info = """
 키보드 컨트롤:
 - 스페이스바: 점프
-- 게임 시작/정지: 'S' 키
+- 's' 키: 게임 시작/정지
+- 텍스트 상자를 클릭한 후 키보드를 사용하세요
 """
 st.info(keyboard_info)
 
 # 게임 상태를 보여줄 요소
 game_display = st.empty()
 
-# 키보드 입력 핸들링
-js_code = """
-<script>
-document.addEventListener('keydown', function(e) {
-    if (e.code === 'Space') {
-        document.querySelector('[data-testid="stButton"][kind="secondary"]').click();
-        e.preventDefault();
-    } else if (e.key === 's' || e.key === 'S') {
-        document.querySelector('[data-testid="stButton"][kind="primary"]').click();
-    }
-});
-</script>
-"""
-st.components.v1.html(js_code, height=0)
+# 키보드 입력을 위한 더 안정적인 방법
+keyboard_placeholder = st.empty()
+key_pressed = keyboard_placeholder.text_input("키보드 입력(눈에 보이지 않음)", key="keyboard_input", label_visibility="collapsed")
+
+# 이전 키 입력 상태 추적
+if 'prev_key' not in st.session_state:
+    st.session_state.prev_key = ""
+
+# 키 입력 처리
+if key_pressed != st.session_state.prev_key:
+    if key_pressed and key_pressed[-1:] == " ":  # 스페이스바
+        jump()
+    elif key_pressed and key_pressed[-1:].lower() == "s":  # S 키
+        toggle_game()
+    
+    st.session_state.prev_key = key_pressed
 
 # 게임 루프
 if st.session_state.game_active:

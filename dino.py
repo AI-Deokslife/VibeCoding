@@ -2,7 +2,7 @@ import streamlit as st
 import time
 import random
 
-# 게임 설정
+# 게임 설정 - 더 큰 게임 화면과 이모지 크기
 if 'game_active' not in st.session_state:
     st.session_state.game_active = False
     st.session_state.game_over = False
@@ -15,18 +15,31 @@ if 'game_active' not in st.session_state:
     st.session_state.speed = 1
     st.session_state.night_mode = False
     st.session_state.spawn_rate = 40  # 장애물 생성 빈도
+    st.session_state.last_jump_time = 0  # 마지막 점프 시간 기록
 
-# 상수 정의
+# 상수 정의 - 게임 크기 증가, 점프 물리 조정
 GROUND_HEIGHT = 1
-JUMP_VELOCITY = 15
-GRAVITY = 1
+JUMP_VELOCITY = 12  # 점프 초기 속도 감소
+GRAVITY = 1.2  # 중력 효과 증가
+MAX_JUMP_HEIGHT = 6  # 최대 점프 높이 제한
 OBSTACLE_TYPES = ["🌵", "🌵🌵", "🌵🌵🌵", "🦅"]
 DINO_RUN = ["🦖", "🦕"]
 DINO_JUMP = "🦖"
 DINO_DUCK = "🐊"
 GROUND = "___"
-GAME_WIDTH = 70
-GAME_HEIGHT = 10
+GAME_WIDTH = 40  # 게임 너비 조정
+GAME_HEIGHT = 8  # 게임 높이 조정
+
+# CSS로 이모지 크기 증가
+def increase_emoji_size():
+    return """
+    <style>
+    .stMarkdown pre {
+        font-size: 24px;
+        line-height: 1.2;
+    }
+    </style>
+    """
 
 def reset_game():
     st.session_state.game_active = False
@@ -38,6 +51,7 @@ def reset_game():
     st.session_state.frame_count = 0
     st.session_state.speed = 1
     st.session_state.night_mode = False
+    st.session_state.last_jump_time = 0
 
 def toggle_game():
     if st.session_state.game_over:
@@ -45,29 +59,34 @@ def toggle_game():
     st.session_state.game_active = not st.session_state.game_active
 
 def jump():
-    if st.session_state.dino_pos == 0:  # 지면에 있을 때만 점프 가능
+    current_time = time.time()
+    # 지면에 있고, 마지막 점프 후 충분한 시간이 지났을 때만 점프 가능
+    if st.session_state.dino_pos == 0 and current_time - st.session_state.last_jump_time > 0.1:
         st.session_state.dino_pos = 1
         st.session_state.jump_velocity = JUMP_VELOCITY
-
-def duck():
-    # 나중에 구현 (선택적)
-    pass
+        st.session_state.last_jump_time = current_time
 
 def update_game_state():
     # 점수 업데이트
     st.session_state.score += 1
     
     # 난이도 조절 (점수에 따라 속도 증가)
-    st.session_state.speed = 1 + (st.session_state.score // 500) * 0.5
+    st.session_state.speed = 1 + (st.session_state.score // 300) * 0.2
     
     # 낮/밤 모드 전환 (1000점마다)
     if st.session_state.score % 1000 == 0 and st.session_state.score > 0:
         st.session_state.night_mode = not st.session_state.night_mode
     
-    # 공룡 점프 물리
+    # 공룡 점프 물리 - 최대 높이 제한 추가
     if st.session_state.dino_pos > 0:
+        # 최대 높이 제한
+        if st.session_state.dino_pos >= MAX_JUMP_HEIGHT:
+            st.session_state.jump_velocity = min(st.session_state.jump_velocity, 0)
+        
         st.session_state.dino_pos += st.session_state.jump_velocity
         st.session_state.jump_velocity -= GRAVITY
+        
+        # 지면 제한
         if st.session_state.dino_pos <= 0:
             st.session_state.dino_pos = 0
             st.session_state.jump_velocity = 0
@@ -78,7 +97,7 @@ def update_game_state():
         obstacle_height = 1
         if obstacle_type == "🦅":
             # 새는 공중에 배치
-            obstacle_y = random.randint(2, 4)
+            obstacle_y = random.randint(2, 3)
         else:
             # 선인장은 지상에 배치
             obstacle_y = 0
@@ -163,6 +182,9 @@ def render_game():
     
     return "\n".join(game_display)
 
+# CSS 적용
+st.markdown(increase_emoji_size(), unsafe_allow_html=True)
+
 # 스트림릿 UI
 st.title("크롬 공룡 게임 🦖")
 
@@ -175,34 +197,28 @@ with col2:
 with col3:
     reset_button = st.button("Reset", on_click=reset_game)
 
-# 키보드 입력 처리
-keyboard_info = """
+# 스페이스바 입력을 위한 키보드 캡처 설정
+st.markdown("""
+<script>
+document.addEventListener('keydown', function(e) {
+    if (e.code === 'Space') {
+        const jumpButton = document.querySelector('button[data-testid="stButton"]');
+        if (jumpButton) jumpButton.click();
+        e.preventDefault();
+    }
+});
+</script>
+""", unsafe_allow_html=True)
+
+# 키보드 입력 안내
+st.info("""
 키보드 컨트롤:
 - 스페이스바: 점프
-- 's' 키: 게임 시작/정지
-- 텍스트 상자를 클릭한 후 키보드를 사용하세요
-"""
-st.info(keyboard_info)
+- 버튼 클릭: 게임 시작/점프/리셋
+""")
 
 # 게임 상태를 보여줄 요소
 game_display = st.empty()
-
-# 키보드 입력을 위한 더 안정적인 방법
-keyboard_placeholder = st.empty()
-key_pressed = keyboard_placeholder.text_input("키보드 입력(눈에 보이지 않음)", key="keyboard_input", label_visibility="collapsed")
-
-# 이전 키 입력 상태 추적
-if 'prev_key' not in st.session_state:
-    st.session_state.prev_key = ""
-
-# 키 입력 처리
-if key_pressed != st.session_state.prev_key:
-    if key_pressed and key_pressed[-1:] == " ":  # 스페이스바
-        jump()
-    elif key_pressed and key_pressed[-1:].lower() == "s":  # S 키
-        toggle_game()
-    
-    st.session_state.prev_key = key_pressed
 
 # 게임 루프
 if st.session_state.game_active:
@@ -214,5 +230,5 @@ game_display.code(game_scene, language=None)
 
 # 게임이 활성화되어 있는 경우 자동 리프레시
 if st.session_state.game_active:
-    time.sleep(0.1)  # 프레임 지연
+    time.sleep(0.08)  # 프레임 지연 감소 (더 빠른 게임 속도)
     st.rerun()

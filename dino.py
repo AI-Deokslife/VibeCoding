@@ -212,4 +212,4 @@ game_display.code(game_scene, language=None)
 # 게임이 활성화되어 있는 경우 자동 리프레시
 if st.session_state.game_active:
     time.sleep(0.1)  # 프레임 지연
-    st.experimental_rerun()
+    st.rerun()

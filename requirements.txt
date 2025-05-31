@@ -1,7 +1,7 @@
 plotly
 folium
 koreanize_matplotlib
-streamlit==1.39.0  # 또는 1.25.0, 1.33.0 등 다른 버전으로 시도
+streamlit  # 또는 1.25.0, 1.33.0 등 다른 버전으로 시도
 streamlit-drawable-canvas==0.9.3
 Pillow==10.4.0
 numpy==1.26.4

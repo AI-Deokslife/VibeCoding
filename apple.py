@@ -4,7 +4,7 @@ import pandas as pd
 
 # --- 설정 및 변수 ---
 # YOUR_NICE_API_KEY 부분을 발급받은 인증키로 변경해주세요.
-API_KEY = "1mp7CBP_8PXXbAzBmUiA0AkP1MdMvjkQRrAmd8V9e-2A"
+API_KEY = "642dda7d6de142018ee62b6d76c55184"
 NICE_API_BASE_URL = "https://open.neis.go.kr/hub/schoolInfo"
 
 # --- Streamlit UI 구성 ---

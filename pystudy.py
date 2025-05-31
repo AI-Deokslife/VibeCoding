@@ -6,10 +6,10 @@ import re
 # --- ⚙️ Gemini API 키 설정 ---
 # Streamlit Cloud 배포 시
 try:
-    genai.configure(api_key=st.secrets["AIzaSyCan-sAGAVOlXc7gBArhv6lm2sswsU92zA"])
+    genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
 except:
     # 로컬 환경 변수 사용 시 또는 직접 입력
-    api_key = os.environ.get("AIzaSyCan-sAGAVOlXc7gBArhv6lm2sswsU92zA")
+    api_key = os.environ.get("GEMINI_API_KEY")
     if not api_key:
         st.error("API 키가 설정되지 않았습니다. GEMINI_API_KEY 환경변수를 설정하거나 secrets.toml 파일을 생성해주세요.")
         st.stop()

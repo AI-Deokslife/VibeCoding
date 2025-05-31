@@ -6,9 +6,9 @@ import re
 # --- ⚙️ Gemini API 키 설정 (테스트용: 직접 입력) ---
 # ⚠️ 경고: 이 방식은 테스트용이며, 실제 배포 시에는 절대 사용하지 마세요.
 # 아래 "YOUR_GEMINI_API_KEY" 부분을 실제 API 키로 바꿔주세요.
-API_KEY_직접입력 = "AIzaSyCan-sAGAVOlXc7gBArhv6lm2sswsU92zA"
+API_KEY_직접입력 = "A"
 
-if not API_KEY_직접입력 or API_KEY_직접입력 == "AIzaSyCan-sAGAVOlXc7gBArhv6lm2sswsU92zA":
+if not API_KEY_직접입력 or API_KEY_직접입력 == "A":
     st.error("⚠️ API 키가 코드에 직접 입력되지 않았습니다. 코드의 'YOUR_GEMINI_API_KEY' 부분을 실제 Gemini API 키로 교체한 후 다시 실행해주세요.")
     st.warning("이 방식은 테스트용이며, API 키 노출 위험이 있으니 GitHub 등에 올리지 마세요.")
     st.stop()

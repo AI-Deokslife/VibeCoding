@@ -26,7 +26,7 @@ def configure_gemini():
         )
         
         model = genai.GenerativeModel(
-            'gemini-pro',
+            'gemini-flash',
             generation_config=generation_config
         )
         return model

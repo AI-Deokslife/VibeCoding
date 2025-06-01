@@ -27,7 +27,7 @@ st.markdown("""
         max-width: 100%;
     }
     
-    /* 설정 패널 */
+    /* 설정 패널 스타일 개선 */
     .settings-panel {
         background: white;
         border: 2px solid #E2E8F0;
@@ -35,6 +35,16 @@ st.markdown("""
         padding: 1.5rem;
         margin: 1rem 0;
         box-shadow: 0 4px 12px rgba(226, 232, 240, 0.4);
+    }
+    
+    /* 섹션 제목 스타일 */
+    .settings-panel h4 {
+        color: #4A5568;
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin: 1.5rem 0 1rem 0;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid #F1F5F9;
     }
     
     /* 타이머 디스플레이 */
@@ -434,7 +444,7 @@ settings_col, timer_col, control_col = st.columns([1, 2, 1])
 # 1. 설정 패널 (왼쪽)
 with settings_col:
     st.markdown('<div class="settings-panel">', unsafe_allow_html=True)
-    st.markdown("### ⚙️ 설정")
+    st.markdown("### 설정")
     
     timer_mode = st.selectbox("모드", ["단일 타이머", "단계별 활동 타이머"])
     
@@ -472,7 +482,8 @@ with settings_col:
             help="진행할 활동의 이름을 입력하세요"
         )
         
-        if st.button("✅ 단일 타이머 설정", use_container_width=True):
+        st.markdown("#### 🚀 타이머 시작")
+        if st.button("✅ 단일 타이머 설정", use_container_width=True, help="설정한 시간으로 타이머를 준비합니다"):
             total_seconds = minutes * 60 + seconds
             if total_seconds > 0:
                 st.session_state.current_time = total_seconds
@@ -491,11 +502,17 @@ with settings_col:
     else:
         st.session_state.timer_type = "multi"
         
+        st.markdown("#### 📚 템플릿 선택")
+        
         templates = get_template_activities()
-        template_choice = st.selectbox("템플릿", ["사용자 정의"] + list(templates.keys()))
+        template_choice = st.selectbox(
+            "수업 템플릿", 
+            ["사용자 정의"] + list(templates.keys()),
+            help="미리 만들어진 수업 템플릿을 선택하거나 직접 만드세요"
+        )
         
         if template_choice != "사용자 정의":
-            if st.button("📋 템플릿 적용", use_container_width=True):
+            if st.button("📋 템플릿 적용", use_container_width=True, help=f"'{template_choice}' 템플릿을 활동 목록에 추가합니다"):
                 st.session_state.activities = templates[template_choice].copy()
                 if st.session_state.activities:
                     st.session_state.current_activity = st.session_state.activities[0]["name"]
@@ -510,58 +527,87 @@ with settings_col:
         
         # 새 활동 추가
         with st.expander("➕ 활동 추가"):
-            new_name = st.text_input("활동명")
-            new_duration = st.number_input("시간(분)", min_value=1, max_value=60, value=10)
+            st.markdown("#### 새 활동 정보")
             
-            if st.button("➕ 추가", use_container_width=True):
+            activity_col1, activity_col2 = st.columns([2, 1])
+            
+            with activity_col1:
+                new_name = st.text_input(
+                    "활동명", 
+                    key="new_activity_input",
+                    placeholder="예: 모둠 토론, 발표 등",
+                    help="추가할 활동의 이름을 입력하세요"
+                )
+            
+            with activity_col2:
+                new_duration = st.number_input(
+                    "시간(분)", 
+                    min_value=1, 
+                    max_value=60, 
+                    value=10,
+                    key="new_duration_input",
+                    help="활동 소요 시간을 분 단위로 입력하세요"
+                )
+            
+            if st.button("➕ 활동 추가", use_container_width=True, help="새로운 활동을 목록에 추가합니다"):
                 if new_name.strip():
                     st.session_state.activities.append({
                         "name": new_name.strip(),
                         "duration": new_duration
                     })
-                    st.success("✅ 추가 완료!")
+                    st.success(f"✅ '{new_name}' 추가 완료!")
                     time.sleep(1)
                     st.rerun()
+                else:
+                    st.error("⚠️ 활동명을 입력해주세요!")
         
         # 활동 목록 및 시간 수정
         if st.session_state.activities:
             st.markdown("#### 📋 활동 목록")
             
             for i, activity in enumerate(st.session_state.activities):
-                col1, col2, col3 = st.columns([3, 2, 1])
-                
-                with col1:
-                    if i == st.session_state.activity_index:
-                        st.markdown(f"**▶️ {activity['name']}**")
-                    else:
-                        st.write(f"{i+1}. {activity['name']}")
-                
-                with col2:
-                    new_duration = st.number_input(
-                        "분", 
-                        min_value=1, 
-                        max_value=120, 
-                        value=int(activity['duration']), 
-                        key=f"dur_{i}",
-                        label_visibility="collapsed"
-                    )
+                # 각 활동을 카드 형태로 표시
+                with st.container():
+                    activity_card_col1, activity_card_col2, activity_card_col3 = st.columns([3, 2, 1])
                     
-                    if new_duration != activity['duration']:
-                        st.session_state.activities[i]['duration'] = new_duration
-                        if i == st.session_state.activity_index and not st.session_state.timer_running:
-                            st.session_state.current_time = new_duration * 60
-                            st.session_state.total_time = new_duration * 60
-                
-                with col3:
-                    if st.button("🗑️", key=f"del_{i}"):
-                        st.session_state.activities.pop(i)
-                        if st.session_state.activity_index >= len(st.session_state.activities):
-                            st.session_state.activity_index = max(0, len(st.session_state.activities) - 1)
-                        st.rerun()
+                    with activity_card_col1:
+                        if i == st.session_state.activity_index:
+                            st.markdown(f"**▶️ {activity['name']}** (진행 중)")
+                        else:
+                            st.markdown(f"**{i+1}.** {activity['name']}")
+                    
+                    with activity_card_col2:
+                        new_duration = st.number_input(
+                            "분", 
+                            min_value=1, 
+                            max_value=120, 
+                            value=int(activity['duration']), 
+                            key=f"duration_edit_{i}",
+                            label_visibility="collapsed",
+                            help=f"{activity['name']} 활동 시간 조정"
+                        )
+                        
+                        if new_duration != activity['duration']:
+                            st.session_state.activities[i]['duration'] = new_duration
+                            if i == st.session_state.activity_index and not st.session_state.timer_running:
+                                st.session_state.current_time = new_duration * 60
+                                st.session_state.total_time = new_duration * 60
+                    
+                    with activity_card_col3:
+                        if st.button("🗑️", key=f"delete_activity_{i}", help="활동 삭제"):
+                            st.session_state.activities.pop(i)
+                            if st.session_state.activity_index >= len(st.session_state.activities):
+                                st.session_state.activity_index = max(0, len(st.session_state.activities) - 1)
+                            st.rerun()
+                    
+                    # 활동 구분선
+                    if i < len(st.session_state.activities) - 1:
+                        st.markdown("---")
             
-            col1, col2 = st.columns(2)
-            with col1:
-                if st.button("🗑️ 전체삭제", use_container_width=True):
+            st.markdown("#### 🎮 활동 관리")
+            management_col1, management_col2 = st.columns(2)
+            with management_col1:
+                if st.button("🗑️ 전체삭제", use_container_width=True, help="모든 활동을 삭제합니다"):
                     st.session_state.activities = []
                     st.session_state.current_activity = ""
                     st.session_state.current_time = 0
@@ -569,8 +615,8 @@ with settings_col:
                     st.session_state.activity_index = 0
                     st.rerun()
             
-            with col2:
-                if st.button("🎯 시작설정", use_container_width=True):
+            with management_col2:
+                if st.button("🎯 시작설정", use_container_width=True, help="첫 번째 활동부터 시작합니다"):
                     if st.session_state.activities:
                         st.session_state.current_activity = st.session_state.activities[0]["name"]
                         st.session_state.current_time = st.session_state.activities[0]["duration"] * 60
@@ -619,7 +665,7 @@ with timer_col:
 # 3. 컨트롤 패널 (오른쪽)
 with control_col:
     st.markdown('<div class="control-panel">', unsafe_allow_html=True)
-    st.markdown("### 🎮 조작")
+    st.markdown("### 조작")
     
     # 시작/정지
     if not st.session_state.timer_running:

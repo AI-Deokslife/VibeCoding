@@ -685,7 +685,7 @@ if st.session_state.timer_running and st.session_state.current_time > 0:
     # 1초마다 업데이트, 하지만 무한루프 방지를 위해 조건부 실행
     time.sleep(1)
     st.rerun()
-elif st.session_state.timer_finished and not st.session_state.fullscreen_mode:
+elif st.session_state.timer_finished:
     # 타이머 종료 시에도 한 번 업데이트
     time.sleep(0.5)
     st.rerun()

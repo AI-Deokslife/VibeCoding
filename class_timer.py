@@ -91,6 +91,30 @@ st.markdown("""
         border-radius: 10px;
         margin: 1rem 0;
     }
+    
+    .quick-start-box {
+        background-color: #e7f3ff;
+        border: 2px solid #007bff;
+        border-radius: 10px;
+        padding: 1rem;
+        margin: 1rem 0;
+    }
+    
+    .tip-box {
+        background-color: #fff3cd;
+        border: 2px solid #ffc107;
+        border-radius: 10px;
+        padding: 1rem;
+        margin: 1rem 0;
+    }
+    
+    .example-box {
+        background-color: #d1ecf1;
+        border: 2px solid #17a2b8;
+        border-radius: 10px;
+        padding: 1rem;
+        margin: 1rem 0;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -143,6 +167,9 @@ def init_session_state():
 
     if 'blink_end_time' not in st.session_state:
         st.session_state.blink_end_time = None
+
+    if 'show_tutorial' not in st.session_state:
+        st.session_state.show_tutorial = True
 
 # 사전 정의된 템플릿
 def get_templates():
@@ -488,7 +515,7 @@ def render_segment_timer():
     
     if st.session_state.remaining_time <= 0 and st.session_state.timer_running:
         st.session_state.timer_running = False
-        st.balloons()
+        st.balloons()  # 풍선 효과
         if st.session_state.current_activity_index < len(st.session_state.activities) - 1:
             next_activity(auto_start_next=False)
             st.success(f"'{current_activity['name']}' 활동 완료! 다음 활동으로 이동합니다.")
@@ -551,7 +578,7 @@ def render_countdown_timer():
     
     if st.session_state.remaining_time <= 0 and st.session_state.timer_running:
         st.session_state.timer_running = False
-        st.balloons()
+        st.balloons()  # 풍선 효과
         st.success("⏰ 시간이 종료되었습니다!")
         st.rerun()
 
@@ -623,7 +650,7 @@ def render_pomodoro_timer():
             st.success("☕ 휴식이 끝났습니다! 다시 집중해봅시다.")
         
         next_pomodoro_session()
-        st.balloons()
+        st.balloons()  # 풍선 효과
         st.rerun()
 
 def render_stopwatch():
@@ -778,44 +805,255 @@ def next_pomodoro_session():
     st.session_state.timer_running = False
     st.session_state.blink_end_time = None
 
+def render_tutorial():
+    """처음 사용자를 위한 튜토리얼"""
+    if st.session_state.show_tutorial:
+        st.markdown("""
+        <div class="quick-start-box">
+            <h3>🚀 빠른 시작 가이드</h3>
+            <p><strong>처음 사용하시나요? 이렇게 시작해보세요!</strong></p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        tutorial_tabs = st.tabs(["📚 구간 타이머", "⏰ 카운트다운", "🍅 포모도로", "⏱️ 스톱워치"])
+        
+        with tutorial_tabs[0]:
+            st.markdown("""
+            <div class="example-box">
+                <h4>📚 구간 타이머 - 단계별 사용법</h4>
+                <ol>
+                    <li><strong>왼쪽 사이드바</strong>에서 '구간 타이머' 선택</li>
+                    <li><strong>템플릿 선택</strong>에서 원하는 수업 형태 선택 (예: 일반 수업, 토론 수업)</li>
+                    <li><strong>'템플릿 불러오기'</strong> 버튼 클릭</li>
+                    <li>메인 화면에서 <strong>▶️ 시작</strong> 버튼 클릭</li>
+                    <li>각 활동이 끝나면 자동으로 다음 활동으로 이동하며 🎈 풍선이 나타납니다!</li>
+                </ol>
+                <p><strong>💡 팁:</strong> 커스텀 활동을 추가하려면 '새 활동 추가'에서 활동명과 시간을 입력하세요.</p>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with tutorial_tabs[1]:
+            st.markdown("""
+            <div class="example-box">
+                <h4>⏰ 카운트다운 - 단계별 사용법</h4>
+                <ol>
+                    <li><strong>왼쪽 사이드바</strong>에서 '기본 카운트다운' 선택</li>
+                    <li><strong>카운트다운 설정</strong>에서 시간, 분, 초 입력</li>
+                    <li><strong>'시간 설정'</strong> 버튼 클릭</li>
+                    <li>메인 화면에서 <strong>▶️ 시작</strong> 버튼 클릭</li>
+                    <li>시간이 끝나면 🎈 풍선과 함께 완료 메시지가 나타납니다!</li>
+                </ol>
+                <p><strong>💡 예시:</strong> 25분 집중 시간 → 시간: 0, 분: 25, 초: 0</p>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with tutorial_tabs[2]:
+            st.markdown("""
+            <div class="example-box">
+                <h4>🍅 포모도로 - 단계별 사용법</h4>
+                <ol>
+                    <li><strong>왼쪽 사이드바</strong>에서 '포모도로 타이머' 선택</li>
+                    <li><strong>포모도로 설정</strong>에서 집중/휴식 시간 설정 (기본: 25분/5분)</li>
+                    <li><strong>'포모도로 시작/설정'</strong> 버튼 클릭</li>
+                    <li>메인 화면에서 <strong>▶️ 시작</strong> 버튼 클릭</li>
+                    <li>집중→휴식→집중 사이클이 자동으로 반복됩니다!</li>
+                </ol>
+                <p><strong>💡 포모도로 기법:</strong> 25분 집중 후 5분 휴식을 반복하여 집중력을 높이는 시간 관리 기법</p>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with tutorial_tabs[3]:
+            st.markdown("""
+            <div class="example-box">
+                <h4>⏱️ 스톱워치 - 단계별 사용법</h4>
+                <ol>
+                    <li><strong>왼쪽 사이드바</strong>에서 '무한 스톱워치' 선택</li>
+                    <li><strong>측정 목적</strong> 선택 (예: 학생 발표 시간, 문제 풀이 시간)</li>
+                    <li>목표 시간 설정 (선택사항)</li>
+                    <li>활동 시작과 함께 <strong>▶️ 시작</strong> 버튼 클릭</li>
+                    <li>활동 완료 후 <strong>💾 기록 저장</strong>으로 결과 저장</li>
+                </ol>
+                <p><strong>💡 활용 예:</strong> 학생별 발표 시간 측정, 문제 풀이 속도 체크, 실험 관찰 시간 기록</p>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        if st.button("✅ 튜토리얼 닫기", key="close_tutorial"):
+            st.session_state.show_tutorial = False
+            st.rerun()
+
+def render_color_guide():
+    """색상 안내"""
+    st.markdown("""
+    <div class="tip-box">
+        <h4>🎨 타이머 색상 안내</h4>
+        <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <div style="width: 30px; height: 30px; background-color: #d4edda; border: 2px solid #c3e6cb; border-radius: 5px;"></div>
+                <span><strong>초록색:</strong> 충분한 시간 (50% 이상)</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <div style="width: 30px; height: 30px; background-color: #fff3cd; border: 2px solid #ffeaa7; border-radius: 5px;"></div>
+                <span><strong>노란색:</strong> 주의 필요 (20~50%)</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <div style="width: 30px; height: 30px; background-color: #f8d7da; border: 2px solid #f5c6cb; border-radius: 5px;"></div>
+                <span><strong>빨간색:</strong> 긴급 상황 (20% 미만, 깜빡임)</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <div style="width: 30px; height: 30px; background-color: #dc3545; border-radius: 5px;"></div>
+                <span><strong>종료:</strong> 시간 완료 (3초간 깜빡임 후 정지)</span>
+            </div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
 # 메인 애플리케이션
 def main():
     init_session_state()
     
     st.title("⏰ 수업 타이머 & 활동 관리 도구")
+    st.markdown("**교실에서 시간을 효율적으로 관리하고 활동을 체계적으로 진행하세요!**")
     st.markdown("---")
+    
+    # 튜토리얼 표시
+    render_tutorial()
+    
+    # 색상 가이드
+    render_color_guide()
     
     render_sidebar()
     render_main_timer()
     
     st.markdown("---")
-    with st.expander("ℹ️ 사용법"):
-        st.markdown("""
-        ### 타이머 모드별 사용법
+    
+    # 개선된 사용법
+    with st.expander("📖 상세 사용법 및 활용 예시"):
+        help_tabs = st.tabs(["🎯 주요 기능", "💡 활용 사례", "🔧 고급 팁", "❓ 자주 묻는 질문"])
         
-        **🔹 구간 타이머**
-        - 여러 단계로 나누어진 수업에 적합
-        - 템플릿을 사용하거나 직접 활동을 추가/수정/삭제
-        - 각 활동 시간이 끝나면 다음 활동으로 이동 (자동 시작은 선택 가능, 기본은 수동 시작)
+        with help_tabs[0]:
+            st.markdown("""
+            ### 🎯 주요 기능 소개
+            
+            **🔹 구간 타이머**
+            - **용도:** 여러 단계로 구성된 수업 진행
+            - **특징:** 미리 정의된 템플릿 사용 가능, 커스텀 활동 추가/수정/삭제
+            - **자동 진행:** 각 활동 완료 시 다음 활동으로 자동 이동 (수동 시작)
+            - **진행률 표시:** 전체 수업과 개별 활동의 진행 상황을 시각적으로 표시
+            
+            **🔹 기본 카운트다운**
+            - **용도:** 정해진 시간을 역순으로 카운트 (시험, 발표, 과제 시간)
+            - **특징:** 시/분/초 단위로 정확한 시간 설정 가능
+            - **알림:** 시간 종료 시 풍선 효과와 완료 메시지
+            
+            **🔹 포모도로 타이머**
+            - **용도:** 집중력 향상을 위한 시간 관리 (집중→휴식 반복)
+            - **특징:** 작업 시간과 휴식 시간을 각각 설정 가능
+            - **사이클 관리:** 자동으로 작업↔휴식 모드 전환
+            
+            **🔹 무한 스톱워치**
+            - **용도:** 활동 시간 측정 및 기록 관리
+            - **특징:** 목적별 측정, 목표 시간 설정, 기록 저장 및 관리
+            - **분석:** 측정 기록을 통한 시간 분석 가능
+            """)
         
-        **🔹 기본 카운트다운**
-        - 정해진 시간을 역순으로 카운트
-        - 시험, 발표 등 고정된 시간 활동에 적합
+        with help_tabs[1]:
+            st.markdown("""
+            ### 💡 교실 활용 사례
+            
+            **📚 국어 수업 (구간 타이머)**
+            ```
+            1. 복습 및 동기유발 (5분)
+            2. 새 단원 설명 (15분)
+            3. 모둠 활동 (20분)
+            4. 발표 및 공유 (8분)
+            5. 정리 및 과제 안내 (2분)
+            ```
+            
+            **🧪 과학 실험 (구간 타이머)**
+            ```
+            1. 실험 준비 및 안전 교육 (5분)
+            2. 실험 재료 관찰 (10분)
+            3. 실험 진행 1차 (15분)
+            4. 결과 기록 및 대기 (10분)
+            5. 실험 진행 2차 (10분)
+            6. 결과 정리 및 토론 (10분)
+            ```
+            
+            **📝 시험 관리 (카운트다운)**
+            - 객관식 시험: 40분 설정
+            - 서술형 시험: 1시간 30분 설정
+            - 발표 시험: 학생당 5분씩 설정
+            
+            **👨‍🎓 학생 발표 (스톱워치)**
+            - 목적: "학생 발표 시간" 선택
+            - 목표 시간: 3분 설정
+            - 각 학생별 발표 시간 측정 및 기록
+            
+            **🍅 자습 시간 (포모도로)**
+            - 25분 집중 + 5분 휴식
+            - 50분 집중 + 10분 휴식 (긴 버전)
+            """)
         
-        **🔹 포모도로 타이머**
-        - 설정된 집중 시간과 휴식 시간의 사이클 반복
-        - 집중력 향상과 효율적인 학습에 도움
+        with help_tabs[2]:
+            st.markdown("""
+            ### 🔧 고급 활용 팁
+            
+            **⭐ 구간 타이머 고급 팁**
+            - **템플릿 커스터마이징:** 기본 템플릿을 불러온 후 시간 조정
+            - **활동 순서 조정:** 이전/다음 버튼으로 유연한 진행
+            - **중간 저장:** 수업 중 예상치 못한 상황 시 일시정지 활용
+            
+            **⭐ 스톱워치 활용 팁**
+            - **목표 시간 설정:** 학습 목표나 발표 시간 제한 설정
+            - **기록 분석:** 저장된 기록으로 학생별 발표 시간 패턴 분석
+            - **실시간 피드백:** 목표 시간 대비 현재 진행 상황 시각적 확인
+            
+            **⭐ 화면 활용 팁**
+            - **대형 화면 연결:** 프로젝터나 TV에 연결하여 전체 학생이 확인
+            - **색상 신호:** 초록→노랑→빨강 변화로 시간 경과 직관적 파악
+            - **사이드바 숨기기:** 메인 타이머만 크게 보여주고 싶을 때 사용
+            
+            **⭐ 교육적 효과**
+            - **시간 관리 교육:** 학생들이 시간 개념을 시각적으로 학습
+            - **집중력 향상:** 명확한 시간 제한으로 활동 집중도 증가
+            - **공정한 기회:** 모든 학생에게 동일한 시간 제공
+            """)
         
-        **🔹 무한 스톱워치**
-        - 시간을 측정하는 기능 (0.1초 단위)
-        - 활동 시간 기록이나 분석에 활용 (목표 시간 설정 및 달성 여부 확인 가능)
-        
-        ### 시각적 표시
-        - **초록색**: 충분한 시간 (50% 이상 남음)
-        - **노란색**: 주의 시간 (20~50% 남음)
-        - **빨간색**: 긴급 시간 (20% 미만 남음, 깜빡임 효과)
-        - **종료 시**: 빨간색 배경에 흰색 글씨 (3초간 깜빡임 후 정지)
-        """)
+        with help_tabs[3]:
+            st.markdown("""
+            ### ❓ 자주 묻는 질문
+            
+            **Q: 타이머가 정확하지 않은 것 같아요.**
+            A: 브라우저 환경에 따라 1-2초 오차가 있을 수 있습니다. 정확한 시간이 중요한 시험의 경우 여유 시간을 두고 설정하세요.
+            
+            **Q: 활동 중간에 시간을 연장하고 싶어요.**
+            A: 구간 타이머에서 해당 활동의 시간을 사이드바에서 수정한 후 '수정' 버튼을 누르세요.
+            
+            **Q: 풍선 효과가 나오지 않아요.**
+            A: 브라우저 설정에서 애니메이션이 비활성화되어 있을 수 있습니다. 성공 메시지는 정상적으로 표시됩니다.
+            
+            **Q: 스톱워치 기록이 사라져요.**
+            A: 브라우저를 새로고침하면 모든 데이터가 초기화됩니다. 중요한 기록은 별도로 메모해 두세요.
+            
+            **Q: 여러 개의 타이머를 동시에 사용할 수 있나요?**
+            A: 현재는 하나의 타이머만 사용 가능합니다. 여러 활동을 동시에 관리하려면 구간 타이머를 활용하세요.
+            
+            **Q: 모바일에서도 사용할 수 있나요?**
+            A: 네, 모바일 브라우저에서도 사용 가능하지만 큰 화면에서 더 잘 보입니다.
+            
+            **Q: 소리 알림은 없나요?**
+            A: 현재 시각적 알림(풍선, 색상 변화, 깜빡임)만 제공됩니다. 소리가 필요한 경우 별도의 타이머를 병행 사용하세요.
+            """)
+    
+    # 피드백 및 문의
+    st.markdown("---")
+    st.markdown("""
+    ### 💬 사용 후기 및 개선 제안
+    이 도구가 수업에 도움이 되셨나요? 개선할 점이나 추가하고 싶은 기능이 있으시면 알려주세요!
+    
+    **📧 연락처:** [교육용 타이머 개발팀]  
+    **🌟 평가:** 별점과 함께 사용 후기를 남겨주세요!
+    """)
 
 if __name__ == "__main__":
     main()

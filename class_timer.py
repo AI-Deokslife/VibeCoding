@@ -23,8 +23,25 @@ st.markdown("""
     .stDecoration {visibility: hidden !important;}
     .stToolbar {visibility: hidden !important;}
     
-    /* 상단 빈 공간 제거 */
+    /* 상단 빈 공간 완전 제거 */
     .main > div:first-child {
+        padding-top: 0 !important;
+        margin-top: 0 !important;
+    }
+    
+    .main .block-container {
+        padding-top: 0 !important;
+        margin-top: 0 !important;
+    }
+    
+    /* 스트림릿 컨테이너 여백 제거 */
+    .element-container {
+        margin-top: 0 !important;
+    }
+    
+    /* 첫 번째 요소 여백 제거 */
+    .element-container:first-child {
+        margin-top: 0 !important;
         padding-top: 0 !important;
     }
     
@@ -32,24 +49,27 @@ st.markdown("""
     .stApp > header {
         height: 0 !important;
         visibility: hidden !important;
+        display: none !important;
     }
     
     .stApp > div:first-child {
         height: 0 !important;
         visibility: hidden !important;
+        display: none !important;
     }
     
-    /* 불필요한 여백 제거 */
-    .block-container {
-        padding-top: 1rem !important;
-        padding-bottom: 1rem !important;
-    }
-    
-    /* 전체 앱 스타일 */
+    /* 전체 앱 컨테이너 */
     .main .block-container {
-        padding-top: 1rem;
+        padding-top: 0;
         padding-bottom: 1rem;
         max-width: 100%;
+        margin-top: 0;
+    }
+    
+    /* 타이틀 상단 여백 제거 */
+    h1 {
+        margin-top: 0 !important;
+        padding-top: 0 !important;
     }
     
     /* 패널 제목 스타일 */

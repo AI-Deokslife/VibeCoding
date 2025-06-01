@@ -374,7 +374,7 @@ def render_stopwatch_settings():
     if st.session_state.stopwatch_records:
         st.sidebar.markdown("### 📊 측정 기록 (최근 5개)")
         for i, record in enumerate(reversed(st.session_state.stopwatch_records[-5:])):
-            st.sidebar.text(f"{len(st.session_state.stopwatch_records) - i - (len(st.session_state.stopwatch_records) - 5 if len(st.session_state.stopwatch_records) > 5 else 0)}. {record[' purpose']}: {format_time(record['time'])}")
+            st.sidebar.text(f"{len(st.session_state.stopwatch_records) - i - (len(st.session_state.stopwatch_records) - 5 if len(st.session_state.stopwatch_records) > 5 else 0)}. {record['purpose']}: {format_time(record['time'])}")
         
         if st.sidebar.button("기록 전체 삭제"):
             st.session_state.stopwatch_records = []

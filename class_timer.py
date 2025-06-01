@@ -320,60 +320,46 @@ with col1:
     st.title("🎯 수업 타이머")
 with col2:
     if st.button("❓ 도움말"):
-        st.session_state.show_help = True
+        st.session_state.show_help = not st.session_state.show_help
 
-# 도움말 모달
+# 도움말 - 간단한 expander 방식으로 변경
 if st.session_state.show_help:
-    # 배경 오버레이
-    st.markdown("""
-    <div style='position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.8); z-index: 999;'></div>
-    """, unsafe_allow_html=True)
-    
-    # 모달 컨텐츠
-    modal_col1, modal_col2, modal_col3 = st.columns([1, 4, 1])
-    
-    with modal_col2:
-        st.markdown("""
-        <div style='background: white; border-radius: 20px; padding: 2rem; margin-top: 5vh; box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3); position: relative; z-index: 1000;'>
-        """, unsafe_allow_html=True)
+    with st.expander("📖 사용 방법 및 팁", expanded=True):
+        col_content, col_close = st.columns([10, 1])
         
-        col_title, col_close = st.columns([5, 1])
-        with col_title:
-            st.markdown("# 📖 사용 방법")
         with col_close:
-            if st.button("✕"):
+            if st.button("✕ 닫기", key="close_help_simple"):
                 st.session_state.show_help = False
                 st.rerun()
         
-        st.markdown("""
-        ### 🎯 기본 사용법
-        
-        **1. 단일 타이머**
-        - 왼쪽에서 시간과 활동명 입력
-        - "단일 타이머 설정" 클릭
-        - 오른쪽에서 ▶️ 시작
-        
-        **2. 단계별 활동 타이머**
-        - 템플릿 선택 또는 직접 추가
-        - 시간 수정 가능
-        - "시작 설정" 후 ▶️ 시작
-        
-        ### 🎨 색상 의미
-        - 💚 **초록**: 시간 충분 (50% 이상)
-        - 💛 **노랑**: 주의 (20~50%)
-        - 💗 **분홍**: 시간 부족 (20% 미만)
-        
-        ### 🔔 알림
-        - 비프음 3회
-        - 풍선 효과
-        - 화면 깜빡임
-        """)
-        
-        if st.button("✅ 확인", use_container_width=True):
-            st.session_state.show_help = False
-            st.rerun()
-        
-        st.markdown('</div>', unsafe_allow_html=True)
+        with col_content:
+            st.markdown("""
+            ### 🎯 기본 사용법
+            
+            **1. 단일 타이머**
+            - 왼쪽에서 시간과 활동명 입력 → "단일 타이머 설정" 클릭 → 오른쪽에서 ▶️ 시작
+            
+            **2. 단계별 활동 타이머**
+            - 템플릿 선택 또는 직접 추가 → 시간 수정 가능 → "시작 설정" 후 ▶️ 시작
+            
+            ### 🎨 색상 의미
+            - 💚 **초록**: 시간 충분 (50% 이상)
+            - 💛 **노랑**: 주의 (20~50%)
+            - 💗 **분홍**: 시간 부족 (20% 미만)
+            
+            ### 🔔 알림 기능
+            - 비프음 3회 + 풍선 효과 + 화면 깜빡임
+            
+            ### 💡 활용 팁
+            - 12rem 대형 타이머로 교실 어디서든 잘 보임
+            - 템플릿 적용 후에도 각 활동 시간 개별 수정 가능
+            - 활동 기록으로 수업 패턴 분석 및 개선
+            """)
+    
+    # 추가 닫기 버튼
+    if st.button("✅ 도움말 닫기", key="close_help_main", use_container_width=True):
+        st.session_state.show_help = False
+        st.rerun()
 
 st.markdown("---")
 

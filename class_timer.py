@@ -35,17 +35,77 @@ def initialize_session_state():
         st.session_state.activity_log = []
     if 'timer_finished' not in st.session_state:
         st.session_state.timer_finished = False
+    if 'fullscreen_mode' not in st.session_state:
+        st.session_state.fullscreen_mode = False
 
 initialize_session_state()
 
 # 파스텔 테마 CSS 스타일
 st.markdown("""
 <style>
-    /* 전체 앱 배경 */
+    /* 전체 앱 배경 - 흰색 기반 */
     .main .block-container {
-        background: linear-gradient(135deg, #F8F9FA 0%, #E8F4FD 50%, #FFF0F5 100%);
+        background: linear-gradient(135deg, #FFFFFF 0%, #F8FAFF 50%, #FFF5F8 100%);
         border-radius: 20px;
         padding: 2rem;
+    }
+    
+    /* 전체화면 모드 */
+    .fullscreen-timer {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: linear-gradient(135deg, #FFFFFF 0%, #F0F4FF 100%);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+        padding: 2rem;
+    }
+    
+    .fullscreen-timer-display {
+        font-size: 8rem;
+        font-weight: bold;
+        text-align: center;
+        padding: 4rem;
+        border-radius: 30px;
+        margin: 2rem 0;
+        box-shadow: 0 20px 40px rgba(149, 157, 165, 0.3);
+        border: 3px solid #E8F4FD;
+        color: #4A5568;
+        min-width: 400px;
+    }
+    
+    .fullscreen-activity-name {
+        font-size: 3rem;
+        font-weight: bold;
+        text-align: center;
+        margin: 2rem 0;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+    
+    .fullscreen-controls {
+        margin-top: 3rem;
+        display: flex;
+        gap: 2rem;
+        justify-content: center;
+    }
+    
+    .fullscreen-button {
+        padding: 1rem 2rem;
+        font-size: 1.5rem;
+        border-radius: 15px;
+        border: none;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        cursor: pointer;
+        box-shadow: 0 8px 16px rgba(102, 126, 234, 0.3);
     }
     
     /* 타이머 디스플레이 */
@@ -80,52 +140,54 @@ st.markdown("""
         font-size: 1.2rem;
         margin: 1rem 0;
         color: #6B7280;
-        background: rgba(255, 255, 255, 0.7);
+        background: rgba(255, 255, 255, 0.9);
         padding: 0.5rem;
         border-radius: 10px;
         backdrop-filter: blur(10px);
+        border: 1px solid #E5E7EB;
     }
     
     /* 카드 스타일들 */
     .status-card {
-        background: linear-gradient(135deg, #E3F2FD 0%, #F3E5F5 100%);
+        background: linear-gradient(135deg, #F0F9FF 0%, #F3E8FF 100%);
         border-radius: 15px;
         padding: 1.5rem;
         margin: 1rem 0;
-        border-left: 4px solid #BBDEFB;
-        box-shadow: 0 4px 12px rgba(187, 222, 251, 0.3);
+        border-left: 4px solid #DBEAFE;
+        box-shadow: 0 4px 12px rgba(219, 234, 254, 0.3);
+        border: 1px solid #E0E7FF;
     }
     
     .warning-card {
-        background: linear-gradient(135deg, #FFF9C4 0%, #FFF3E0 100%);
-        border: 2px solid #FFE082;
+        background: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%);
+        border: 2px solid #FDE68A;
         border-radius: 15px;
         padding: 1.5rem;
         margin: 1rem 0;
-        box-shadow: 0 4px 12px rgba(255, 224, 130, 0.3);
+        box-shadow: 0 4px 12px rgba(253, 230, 138, 0.3);
     }
     
     .success-card {
-        background: linear-gradient(135deg, #E8F5E8 0%, #C8E6C9 100%);
-        border: 2px solid #A5D6A7;
+        background: linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 100%);
+        border: 2px solid #BBF7D0;
         border-radius: 15px;
         padding: 1.5rem;
         margin: 1rem 0;
-        box-shadow: 0 4px 12px rgba(165, 214, 167, 0.3);
+        box-shadow: 0 4px 12px rgba(187, 247, 208, 0.3);
     }
     
     .danger-card {
-        background: linear-gradient(135deg, #FCE4EC 0%, #F8BBD9 100%);
-        border: 2px solid #F48FB1;
+        background: linear-gradient(135deg, #FDF2F8 0%, #FCE7F3 100%);
+        border: 2px solid #F9A8D4;
         border-radius: 15px;
         padding: 1.5rem;
         margin: 1rem 0;
-        box-shadow: 0 4px 12px rgba(244, 143, 177, 0.3);
+        box-shadow: 0 4px 12px rgba(249, 168, 212, 0.3);
     }
     
     /* 사이드바 스타일 */
     .css-1d391kg {
-        background: linear-gradient(180deg, #F0F4F8 0%, #E6FFFA 100%);
+        background: linear-gradient(180deg, #FAFAFA 0%, #F0F9FF 100%);
     }
     
     /* 버튼 스타일 개선 */
@@ -152,7 +214,7 @@ st.markdown("""
     
     /* 메트릭 카드 */
     [data-testid="metric-container"] {
-        background: linear-gradient(135deg, #F7FAFC 0%, #EDF2F7 100%);
+        background: linear-gradient(135deg, #FFFFFF 0%, #F8FAFC 100%);
         border: 1px solid #E2E8F0;
         padding: 1rem;
         border-radius: 15px;
@@ -170,17 +232,19 @@ st.markdown("""
     
     /* 익스팬더 */
     .streamlit-expanderHeader {
-        background: linear-gradient(135deg, #F7FAFC 0%, #EDF2F7 100%);
+        background: linear-gradient(135deg, #FFFFFF 0%, #F8FAFC 100%);
         border-radius: 10px;
         color: #4A5568;
+        border: 1px solid #E2E8F0;
     }
     
     /* 데이터프레임 */
     .stDataFrame {
-        background: rgba(255, 255, 255, 0.9);
+        background: rgba(255, 255, 255, 0.95);
         border-radius: 15px;
         overflow: hidden;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        border: 1px solid #E5E7EB;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -194,17 +258,17 @@ def format_time(seconds: int) -> str:
     return f"{minutes:02d}:{secs:02d}"
 
 def get_timer_color(remaining_time: int, total_time: int) -> str:
-    """남은 시간에 따른 색상 반환"""
+    """남은 시간에 따른 파스텔 색상 반환"""
     if total_time == 0:
-        return "#e8f5e8"
+        return "linear-gradient(135deg, #E8F5E8 0%, #C8E6C9 100%)"
     
     ratio = remaining_time / total_time
     if ratio > 0.5:
-        return "#e8f5e8"  # 초록
+        return "linear-gradient(135deg, #E8F5E8 0%, #C8E6C9 100%)"  # 파스텔 그린
     elif ratio > 0.2:
-        return "#fff3cd"  # 노랑
+        return "linear-gradient(135deg, #FFF9C4 0%, #FFE082 100%)"  # 파스텔 옐로우
     else:
-        return "#f8d7da"  # 빨강
+        return "linear-gradient(135deg, #FCE4EC 0%, #F8BBD9 100%)"  # 파스텔 핑크
 
 def get_template_activities() -> Dict[str, List[Dict]]:
     """사전 정의된 수업 템플릿"""
@@ -292,9 +356,49 @@ def next_activity():
         st.session_state.timer_running = False
         st.session_state.timer_finished = False
 
+def toggle_fullscreen():
+    """전체화면 모드 토글"""
+    st.session_state.fullscreen_mode = not st.session_state.fullscreen_mode
+
+def render_fullscreen_timer():
+    """전체화면 타이머 렌더링"""
+    remaining_time = st.session_state.current_time
+    total_time = st.session_state.total_time
+    timer_color = get_timer_color(remaining_time, total_time)
+    
+    # 진행률 계산
+    progress = max(0, min(1.0, (total_time - remaining_time) / total_time)) if total_time > 0 else 0
+    
+    st.markdown(f"""
+    <div class="fullscreen-timer">
+        <div class="fullscreen-activity-name">
+            📚 {st.session_state.current_activity if st.session_state.current_activity else "수업 활동"}
+        </div>
+        
+        <div class="fullscreen-timer-display" style="background: {timer_color};">
+            {format_time(remaining_time)}
+        </div>
+        
+        <div style="width: 600px; height: 20px; background: #E5E7EB; border-radius: 10px; margin: 1rem 0;">
+            <div style="width: {progress * 100}%; height: 100%; background: linear-gradient(90deg, #667eea 0%, #764ba2 100%); border-radius: 10px; transition: width 0.5s ease;"></div>
+        </div>
+        
+        <div style="text-align: center; font-size: 1.5rem; color: #6B7280; margin: 1rem 0;">
+            진행률: {progress * 100:.1f}% | 남은 시간: {format_time(remaining_time)}
+        </div>
+        
+        <div class="fullscreen-controls">
+            <button onclick="window.parent.postMessage({{type: 'streamlit:setComponentValue', value: 'exit_fullscreen'}}, '*')" 
+                    class="fullscreen-button">
+                🔙 일반 화면
+            </button>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
 # 메인 헤더
 st.title("🎯 수업 타이머 & 활동 관리")
-st.markdown("선생님들을 위한 스마트한 시간 관리 도구")
+st.markdown("선생님들을 위한 파스텔 감성의 스마트 시간 관리 도구 🌸")
 st.markdown("---")
 
 # 사이드바 - 설정 패널
@@ -418,155 +522,170 @@ with st.sidebar:
 # 타이머 업데이트
 update_timer()
 
-# 시간 종료 처리
-if st.session_state.timer_finished:
-    if st.session_state.timer_type == "multi" and st.session_state.activity_index < len(st.session_state.activities) - 1:
-        st.balloons()
-        st.success(f"🎉 '{st.session_state.current_activity}' 활동이 완료되었습니다!")
-        
-        # 현재 활동 로그 추가
-        current_act = st.session_state.activities[st.session_state.activity_index]
-        st.session_state.activity_log.append({
-            "활동명": current_act["name"],
-            "계획 시간": f"{current_act['duration']}분",
-            "실제 소요 시간": format_time(current_act["duration"] * 60),
-            "완료 시각": datetime.datetime.now().strftime("%H:%M:%S")
-        })
-        
-        if st.button("➡️ 다음 활동으로", key="auto_next", use_container_width=True):
-            next_activity()
-            st.rerun()
-    else:
-        st.balloons()
-        st.success("🎉 모든 활동이 완료되었습니다!")
-        st.session_state.timer_finished = False
-
-col1, col2, col3 = st.columns([1, 2, 1])
-
-with col2:
-    # 현재 활동명 표시
-    if st.session_state.current_activity:
-        st.markdown(f"""
-        <div class="activity-name">
-            📚 {st.session_state.current_activity}
-        </div>
-        """, unsafe_allow_html=True)
+else:
+    # 일반 모드 - 기존 UI 표시
     
-    # 타이머 디스플레이
-    remaining_time = st.session_state.current_time
-    total_time = st.session_state.total_time
-    
-    timer_color = get_timer_color(remaining_time, total_time)
-    
-    st.markdown(f"""
-    <div class="timer-display" style="background-color: {timer_color};">
-        {format_time(remaining_time)}
-    </div>
-    """, unsafe_allow_html=True)
-    
-    # 진행률 표시
-    if total_time > 0:
-        progress = max(0, min(1.0, (total_time - remaining_time) / total_time))
-        st.progress(progress, text=f"진행률: {progress * 100:.1f}%")
-        
-        st.markdown(f"""
-        <div class="progress-info">
-            남은 시간: {format_time(remaining_time)} | 전체 시간: {format_time(total_time)}
-        </div>
-        """, unsafe_allow_html=True)
-    
-    # 컨트롤 버튼들
-    col_btn1, col_btn2, col_btn3, col_btn4 = st.columns(4)
-    
-    with col_btn1:
-        if not st.session_state.timer_running:
-            if st.button("▶️ 시작", key="start", use_container_width=True):
-                start_timer()
-        else:
-            if st.button("⏸️ 일시정지", key="pause", use_container_width=True):
-                stop_timer()
-    
-    with col_btn2:
-        if st.button("🔄 리셋", key="reset", use_container_width=True):
-            reset_timer()
-    
-    with col_btn3:
-        if st.session_state.timer_type == "multi" and len(st.session_state.activities) > 1:
-            if st.button("⏭️ 다음", key="next", use_container_width=True):
+    # 시간 종료 처리
+    if st.session_state.timer_finished:
+        if st.session_state.timer_type == "multi" and st.session_state.activity_index < len(st.session_state.activities) - 1:
+            st.balloons()
+            st.success(f"🎉 '{st.session_state.current_activity}' 활동이 완료되었습니다!")
+            
+            # 현재 활동 로그 추가
+            current_act = st.session_state.activities[st.session_state.activity_index]
+            st.session_state.activity_log.append({
+                "활동명": current_act["name"],
+                "계획 시간": f"{current_act['duration']}분",
+                "실제 소요 시간": format_time(current_act["duration"] * 60),
+                "완료 시각": datetime.datetime.now().strftime("%H:%M:%S")
+            })
+            
+            if st.button("➡️ 다음 활동으로", key="auto_next", use_container_width=True):
                 next_activity()
-    
-    with col_btn4:
-        if st.button("🔄 새로고침", key="manual_refresh", use_container_width=True):
+                st.rerun()
+        else:
+            st.balloons()
+            st.success("🎉 모든 활동이 완료되었습니다!")
+            st.session_state.timer_finished = False
+
+    col1, col2, col3 = st.columns([1, 2, 1])
+
+    with col2:
+        # 현재 활동명 표시
+        if st.session_state.current_activity:
+            st.markdown(f"""
+            <div class="activity-name">
+                📚 {st.session_state.current_activity}
+            </div>
+            """, unsafe_allow_html=True)
+        
+        # 타이머 디스플레이
+        remaining_time = st.session_state.current_time
+        total_time = st.session_state.total_time
+        
+        timer_color = get_timer_color(remaining_time, total_time)
+        
+        st.markdown(f"""
+        <div class="timer-display" style="background: {timer_color};">
+            {format_time(remaining_time)}
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # 진행률 표시
+        if total_time > 0:
+            progress = max(0, min(1.0, (total_time - remaining_time) / total_time))
+            st.progress(progress, text=f"진행률: {progress * 100:.1f}%")
+            
+            st.markdown(f"""
+            <div class="progress-info">
+                남은 시간: {format_time(remaining_time)} | 전체 시간: {format_time(total_time)}
+            </div>
+            """, unsafe_allow_html=True)
+        
+        # 컨트롤 버튼들
+        col_btn1, col_btn2, col_btn3, col_btn4 = st.columns(4)
+        
+        with col_btn1:
+            if not st.session_state.timer_running:
+                if st.button("▶️ 시작", key="start", use_container_width=True):
+                    start_timer()
+            else:
+                if st.button("⏸️ 일시정지", key="pause", use_container_width=True):
+                    stop_timer()
+        
+        with col_btn2:
+            if st.button("🔄 리셋", key="reset", use_container_width=True):
+                reset_timer()
+        
+        with col_btn3:
+            if st.session_state.timer_type == "multi" and len(st.session_state.activities) > 1:
+                if st.button("⏭️ 다음", key="next", use_container_width=True):
+                    next_activity()
+        
+        with col_btn4:
+            if st.button("🖥️ 전체화면", key="fullscreen", use_container_width=True):
+                st.session_state.fullscreen_mode = True
+                st.rerun()
+
+    # 활동 현황 표시
+    if st.session_state.timer_type == "multi" and st.session_state.activities:
+        st.markdown("---")
+        st.subheader("📊 활동 현황")
+        
+        total_activities = len(st.session_state.activities)
+        current_index = st.session_state.activity_index + 1
+        
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric("전체 활동", f"{total_activities}개")
+        with col2:
+            st.metric("현재 활동", f"{current_index}번째")
+        with col3:
+            remaining_activities = total_activities - current_index
+            st.metric("남은 활동", f"{remaining_activities}개")
+
+    # 활동 로그 표시
+    if st.session_state.activity_log:
+        st.markdown("---")
+        st.subheader("📝 활동 기록")
+        
+        df = pd.DataFrame(st.session_state.activity_log)
+        st.dataframe(df, use_container_width=True, hide_index=True)
+        
+        if st.button("🗑️ 기록 초기화", key="clear_log"):
+            st.session_state.activity_log = []
             st.rerun()
 
-# 활동 현황 표시
-if st.session_state.timer_type == "multi" and st.session_state.activities:
-    st.markdown("---")
-    st.subheader("📊 활동 현황")
-    
-    total_activities = len(st.session_state.activities)
-    current_index = st.session_state.activity_index + 1
-    
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        st.metric("전체 활동", f"{total_activities}개")
-    with col2:
-        st.metric("현재 활동", f"{current_index}번째")
-    with col3:
-        remaining_activities = total_activities - current_index
-        st.metric("남은 활동", f"{remaining_activities}개")
-
-# 활동 로그 표시
-if st.session_state.activity_log:
-    st.markdown("---")
-    st.subheader("📝 활동 기록")
-    
-    df = pd.DataFrame(st.session_state.activity_log)
-    st.dataframe(df, use_container_width=True, hide_index=True)
-    
-    if st.button("🗑️ 기록 초기화", key="clear_log"):
-        st.session_state.activity_log = []
-        st.rerun()
-
-# 도움말
-with st.expander("❓ 사용 방법 및 팁"):
-    st.markdown("""
-    ### 🎯 기본 사용법
-    
-    **1. 단일 타이머**
-    - 사이드바에서 "단일 타이머" 선택
-    - 시간과 활동명 입력 후 "단일 타이머 설정"
-    - ▶️ 시작 버튼으로 타이머 시작
-    
-    **2. 단계별 활동 타이머**
-    - 사이드바에서 "단계별 활동 타이머" 선택
-    - 템플릿 선택 또는 사용자 정의 활동 추가
-    - "시작 설정" 후 타이머 실행
-    
-    ### 🎨 시각적 표시
-    - 🟢 **초록색**: 충분한 시간 (50% 이상)
-    - 🟡 **노란색**: 주의 필요 (20~50%)
-    - 🔴 **빨간색**: 시간 부족 (20% 미만)
-    
-    ### 💡 활용 팁
-    - **F11** 키로 전체화면 모드 사용
-    - **활동 기록**으로 수업 패턴 분석
-    - **템플릿 활용**으로 효율적 시간 관리
-    - **수동 새로고침** 버튼으로 타이머 상태 업데이트
-    
-    ### 🔧 문제 해결
-    - 타이머가 멈춘 것 같으면 "새로고침" 버튼 클릭
-    - 페이지를 새로고침해도 설정이 유지됩니다
-    """)
+    # 도움말
+    with st.expander("❓ 사용 방법 및 팁"):
+        st.markdown("""
+        ### 🎯 기본 사용법
+        
+        **1. 단일 타이머**
+        - 사이드바에서 "단일 타이머" 선택
+        - 시간과 활동명 입력 후 "단일 타이머 설정"
+        - ▶️ 시작 버튼으로 타이머 시작
+        
+        **2. 단계별 활동 타이머**
+        - 사이드바에서 "단계별 활동 타이머" 선택
+        - 템플릿 선택 또는 사용자 정의 활동 추가
+        - "시작 설정" 후 타이머 실행
+        
+        ### 🎨 시각적 표시
+        - 💚 **파스텔 그린**: 충분한 시간 (50% 이상)
+        - 💛 **파스텔 옐로우**: 주의 필요 (20~50%)
+        - 💗 **파스텔 핑크**: 시간 부족 (20% 미만)
+        
+        ### 💡 활용 팁
+        - **🖥️ 전체화면** 버튼으로 대형 화면 표시
+        - **활동 기록**으로 수업 패턴 분석
+        - **템플릿 활용**으로 효율적 시간 관리
+        - **실시간 업데이트**로 정확한 시간 표시
+        
+        ### 🔧 새로운 기능
+        - **전체화면 모드**: 프로젝터나 대형 모니터에 최적화
+        - **실시간 카운트다운**: 1초마다 자동 업데이트
+        - **향상된 UI**: 깔끔한 흰색 배경과 파스텔 색상
+        """)
 
 # 푸터
 st.markdown("---")
 st.markdown(
     """
-    <div style='text-align: center; color: #666; font-size: 0.9em;'>
-        🎯 수업 타이머 & 활동 관리 도구 v2.0 | 
-        교육 현장을 위한 스마트 시간 관리 솔루션
+    <div style='text-align: center; color: #8B5CF6; font-size: 0.9em; background: linear-gradient(135deg, #F3E8FF 0%, #E0E7FF 100%); padding: 1rem; border-radius: 15px; margin-top: 2rem; border: 1px solid #E0E7FF;'>
+        🌸 수업 타이머 & 활동 관리 도구 v2.0 | 
+        교육 현장을 위한 파스텔 감성 시간 관리 솔루션 ✨
     </div>
     """, 
     unsafe_allow_html=True
 )
+
+# 실시간 타이머 업데이트 (안전한 자동 새로고침)
+if st.session_state.timer_running and st.session_state.current_time > 0:
+    # 1초마다 업데이트, 하지만 무한루프 방지를 위해 조건부 실행
+    time.sleep(1)
+    st.rerun()
+elif st.session_state.timer_finished and not st.session_state.fullscreen_mode:
+    # 타이머 종료 시에도 한 번 업데이트
+    time.sleep(0.5)
+    st.rerun()

@@ -15,61 +15,74 @@ st.set_page_config(
 # 스트림릿 기본 UI 완전히 숨기기
 st.markdown("""
 <style>
-    /* 모든 스트림릿 기본 요소 숨기기 */
-    #MainMenu {visibility: hidden !important;}
-    footer {visibility: hidden !important;}
-    header {visibility: hidden !important;}
-    .stDeployButton {visibility: hidden !important;}
-    .stDecoration {visibility: hidden !important;}
-    .stToolbar {visibility: hidden !important;}
+    /* 모든 스트림릿 기본 요소 강제 숨기기 */
+    #MainMenu {display: none !important;}
+    footer {display: none !important;}
+    header {display: none !important;}
+    .stDeployButton {display: none !important;}
+    .stDecoration {display: none !important;}
+    .stToolbar {display: none !important;}
+    .stHeader {display: none !important;}
+    .stAppHeader {display: none !important;}
     
-    /* 상단 빈 공간 완전 제거 */
+    /* 상단 모든 컨테이너 제거 */
     .main > div:first-child {
-        padding-top: 0 !important;
-        margin-top: 0 !important;
+        display: none !important;
     }
     
+    .stApp > div:first-child {
+        display: none !important;
+    }
+    
+    .stApp > header {
+        display: none !important;
+    }
+    
+    /* 불필요한 상단 요소들 모두 제거 */
+    .css-18e3th9 {display: none !important;}
+    .css-1d391kg {display: none !important;}
+    .css-k1vhr4 {display: none !important;}
+    .css-10trblm {display: none !important;}
+    
+    /* 전체 앱 컨테이너 최적화 */
     .main .block-container {
-        padding-top: 0 !important;
-        margin-top: 0 !important;
+        padding: 1rem !important;
+        margin: 0 !important;
+        max-width: 100% !important;
     }
     
-    /* 스트림릿 컨테이너 여백 제거 */
-    .element-container {
-        margin-top: 0 !important;
-    }
-    
-    /* 첫 번째 요소 여백 제거 */
+    /* 첫 번째 요소들 여백 완전 제거 */
     .element-container:first-child {
         margin-top: 0 !important;
         padding-top: 0 !important;
     }
     
-    /* 헤더 영역 완전 제거 */
-    .stApp > header {
-        height: 0 !important;
-        visibility: hidden !important;
-        display: none !important;
-    }
-    
-    .stApp > div:first-child {
-        height: 0 !important;
-        visibility: hidden !important;
-        display: none !important;
-    }
-    
-    /* 전체 앱 컨테이너 */
-    .main .block-container {
-        padding-top: 0;
-        padding-bottom: 1rem;
-        max-width: 100%;
-        margin-top: 0;
-    }
-    
-    /* 타이틀 상단 여백 제거 */
-    h1 {
+    h1:first-child {
         margin-top: 0 !important;
         padding-top: 0 !important;
+    }
+    
+    /* body와 root 요소 여백 제거 */
+    .stApp {
+        top: 0 !important;
+        margin-top: 0 !important;
+        padding-top: 0 !important;
+    }
+    
+    /* 숨겨진 요소들이 공간 차지하지 않도록 */
+    [data-testid="stHeader"] {
+        display: none !important;
+        height: 0 !important;
+    }
+    
+    [data-testid="stToolbar"] {
+        display: none !important;
+        height: 0 !important;
+    }
+    
+    [data-testid="stDecoration"] {
+        display: none !important;
+        height: 0 !important;
     }
     
     /* 패널 제목 스타일 */

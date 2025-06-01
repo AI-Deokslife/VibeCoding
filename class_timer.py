@@ -27,9 +27,24 @@ st.markdown("""
         max-width: 100%;
     }
     
+    /* 패널 제목 스타일 */
+    .panel-title {
+        background: white;
+        border: 2px solid #E2E8F0;
+        border-radius: 12px;
+        padding: 0.8rem 1.2rem;
+        margin: -0.5rem -0.5rem 1.5rem -0.5rem;
+        font-size: 1.3rem;
+        font-weight: 700;
+        color: #4A5568;
+        text-align: center;
+        box-shadow: 0 3px 10px rgba(226, 232, 240, 0.3);
+        border-left: 4px solid #667eea;
+    }
+    
     /* 설정 패널 스타일 개선 */
     .settings-panel {
-        background: white;
+        background: linear-gradient(135deg, #F8FAFC 0%, #F1F5F9 100%);
         border: 2px solid #E2E8F0;
         border-radius: 15px;
         padding: 1.5rem;
@@ -37,14 +52,19 @@ st.markdown("""
         box-shadow: 0 4px 12px rgba(226, 232, 240, 0.4);
     }
     
-    /* 섹션 제목 스타일 */
-    .settings-panel h4 {
-        color: #4A5568;
-        font-size: 1.1rem;
-        font-weight: 600;
-        margin: 1.5rem 0 1rem 0;
-        padding-bottom: 0.5rem;
-        border-bottom: 2px solid #F1F5F9;
+    /* 컨트롤 패널도 동일하게 */
+    .control-panel {
+        background: linear-gradient(135deg, #F8FAFC 0%, #F1F5F9 100%);
+        border: 2px solid #E2E8F0;
+        border-radius: 15px;
+        padding: 1.5rem;
+        margin: 1rem 0;
+        box-shadow: 0 4px 12px rgba(226, 232, 240, 0.4);
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        align-items: stretch;
+        justify-content: center;
     }
     
     /* 타이머 디스플레이 */
@@ -444,7 +464,13 @@ settings_col, timer_col, control_col = st.columns([1, 2, 1])
 # 1. 설정 패널 (왼쪽)
 with settings_col:
     st.markdown('<div class="settings-panel">', unsafe_allow_html=True)
-    st.markdown("### 설정")
+    
+    # 패널 제목
+    st.markdown("""
+    <div class="panel-title">
+        ⚙️ 설정
+    </div>
+    """, unsafe_allow_html=True)
     
     timer_mode = st.selectbox("모드", ["단일 타이머", "단계별 활동 타이머"])
     

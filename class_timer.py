@@ -1,3 +1,4 @@
+```python
 import streamlit as st
 import time
 import datetime
@@ -91,6 +92,63 @@ st.markdown("""
         border-radius: 10px;
         margin: 1rem 0;
     }
+    
+    /* 풍선 애니메이션 스타일 */
+    .balloon-container {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        z-index: 1000;
+        overflow: hidden;
+    }
+    
+    .balloon {
+        position: absolute;
+        width: 50px;
+        height: 70px;
+        border-radius: 50%;
+        background-color: red;
+        animation: float 3s ease-in forwards;
+        opacity: 0.8;
+    }
+    
+    .balloon:nth-child(2) {
+        left: 20%;
+        background-color: blue;
+        animation-delay: 0.2s;
+    }
+    
+    .balloon:nth-child(3) {
+        left: 40%;
+        background-color: yellow;
+        animation-delay: 0.4s;
+    }
+    
+    .balloon:nth-child(4) {
+        left: 60%;
+        background-color: green;
+        animation-delay: 0.6s;
+    }
+    
+    .balloon:nth-child(5) {
+        left: 80%;
+        background-color: purple;
+        animation-delay: 0.8s;
+    }
+    
+    @keyframes float {
+        0% {
+            bottom: -70px;
+            opacity: 0.8;
+        }
+        100% {
+            bottom: 100%;
+            opacity: 0;
+        }
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -143,6 +201,10 @@ def init_session_state():
 
     if 'blink_end_time' not in st.session_state:
         st.session_state.blink_end_time = None
+    
+    if 'show_balloons' not in st.session_state:
+        st.session_state.show_balloons = False
+        st.session_state.balloons_end_time = None
 
 # 사전 정의된 템플릿
 def get_templates():
@@ -229,6 +291,27 @@ def get_time_color_class(remaining_time, total_time):
     else:
         return "time-red"
 
+# 풍선 애니메이션 표시 함수
+def show_custom_balloons():
+    if st.session_state.show_balloons:
+        current_time = time.time()
+        if st.session_state.balloons_end_time is None:
+            st.session_state.balloons_end_time = current_time + 3
+        if current_time < st.session_state.balloons_end_time:
+            st.markdown("""
+            <div class="balloon-container">
+                <div class="balloon" style="left: 10%;"></div>
+                <div class="balloon" style="left: 20%;"></div>
+                <div class="balloon" style="left: 40%;"></div>
+                <div class="balloon" style="left: 60%;"></div>
+                <div class="balloon" style="left: 80%;"></div>
+            </div>
+            """, unsafe_allow_html=True)
+        else:
+            st.session_state.show_balloons = False
+            st.session_state.balloons_end_time = None
+            st.rerun()
+
 # 사이드바 설정
 def render_sidebar():
     st.sidebar.title("⚙️ 타이머 설정")
@@ -250,6 +333,8 @@ def render_sidebar():
         st.session_state.initial_countdown_time = 0
         st.session_state.activities = []
         st.session_state.blink_end_time = None
+        st.session_state.show_balloons = False
+        st.session_state.balloons_end_time = None
         if timer_mode == "구간 타이머":
             templates = get_templates()
             st.session_state.activities = templates["커스텀"].copy()
@@ -396,6 +481,7 @@ def render_stopwatch_settings():
 
 # 메인 타이머 화면
 def render_main_timer():
+    show_custom_balloons()  # 풍선 애니메이션 표시
     if st.session_state.timer_mode == "구간 타이머":
         render_segment_timer()
     elif st.session_state.timer_mode == "기본 카운트다운":
@@ -489,6 +575,8 @@ def render_segment_timer():
     if st.session_state.remaining_time <= 0 and st.session_state.timer_running:
         st.session_state.timer_running = False
         st.balloons()
+        st.session_state.show_balloons = True
+        st.session_state.balloons_end_time = None
         if st.session_state.current_activity_index < len(st.session_state.activities) - 1:
             next_activity(auto_start_next=False)
             st.success(f"'{current_activity['name']}' 활동 완료! 다음 활동으로 이동합니다.")
@@ -552,6 +640,8 @@ def render_countdown_timer():
     if st.session_state.remaining_time <= 0 and st.session_state.timer_running:
         st.session_state.timer_running = False
         st.balloons()
+        st.session_state.show_balloons = True
+        st.session_state.balloons_end_time = None
         st.success("⏰ 시간이 종료되었습니다!")
         st.rerun()
 
@@ -563,10 +653,10 @@ def render_pomodoro_timer():
         st.session_state.remaining_time = st.session_state.pomodoro_work_time
         st.session_state.pomodoro_cycle = 0
 
-    is_work_time = st.session_state.pomodoro_cycle % 2 == 0
-    cycle_number = st.session_state.pomodoro_cycle // 2 + 1
+    is_work_cycle = st.session_state.pomodoro_cycle % 2 == 0
+    cycle_number = (st.session_state.pomodoro_cycle // 2) + 1
     
-    status = "🍅 집중 시간" if is_work_time else "☕ 휴식 시간"
+    status = "🍅 집중 시간" if is_work_cycle else "☕ 휴식 시간"
     
     st.markdown(f"""
     <div class="activity-name">
@@ -574,7 +664,7 @@ def render_pomodoro_timer():
     </div>
     """, unsafe_allow_html=True)
     
-    total_time = st.session_state.pomodoro_work_time if is_work_time else st.session_state.pomodoro_break_time
+    total_time = st.session_state.pomodoro_work_time if is_work_cycle else st.session_state.pomodoro_break_time
     if total_time == 0:
         st.error("포모도로 시간이 0으로 설정되었습니다. 사이드바에서 시간을 설정해주세요.")
         return
@@ -599,13 +689,14 @@ def render_pomodoro_timer():
             st.rerun()
     
     with col2:
-        if st.button("⏭️ 다음 세션", key="pomodoro_next_session"):
+        if st.button("⏭ 다음 세션", key="pomodoro_next"):
             next_pomodoro_session()
             st.rerun()
     
     with col3:
-        if st.button("🔄 초기화", key="pomodoro_reset"):
+        if st.button("🔄 초기화", Perceptions key="pomodoro_reset"):
             st.session_state.timer_running = False
+            st.session_state.time = 0
             st.session_state.pomodoro_cycle = 0
             st.session_state.remaining_time = st.session_state.pomodoro_work_time
             st.rerun()
@@ -617,13 +708,15 @@ def render_pomodoro_timer():
     
     if st.session_state.remaining_time <= 0 and st.session_state.timer_running:
         st.session_state.timer_running = False
-        if is_work_time:
+        st.balloons()
+        st.session_state.show_balloons = True
+        st.session_state.balloons_end_time = None
+        if is_work_cycle:
             st.success("🎉 집중 시간이 끝났습니다! 휴식을 취하세요.")
         else:
-            st.success("☕ 휴식이 끝났습니다! 다시 집중해봅시다.")
+            st.success("☕ 휴식이 끝났습니다! 다시 시작합시다!")
         
         next_pomodoro_session()
-        st.balloons()
         st.rerun()
 
 def render_stopwatch():
@@ -633,7 +726,7 @@ def render_stopwatch():
     <div class="activity-name">
         ⏱️ {purpose}
     </div>
-    """, unsafe_allow_html=True)
+    """, unsafe_allow=True)
     
     if st.session_state.timer_running and st.session_state.stopwatch_start_time is not None:
         current_session_elapsed = time.time() - st.session_state.stopwatch_start_time
@@ -664,21 +757,21 @@ def render_stopwatch():
     <div class="main-timer {color_class}">
         {format_time(elapsed_time)}
     </div>
-    """, unsafe_allow_html=True)
+    """, unsafe_allow=True)
     
     if target_time:
         st.markdown(f"""
         <div class="progress-text">
             {status_text}
         </div>
-        """, unsafe_allow_html=True)
-        progress = min(1.0, elapsed_time / target_time) if target_time > 0 else 0
+        """, unsafe_allow=True)
+        progress = min(1.0, elapsed_time.time / target_time if target_time > 0 else 0)
         st.progress(progress)
     
     col1, col2, col3, col4 = st.columns(4)
     
     with col1:
-        if st.button("▶️ 시작" if not st.session_state.timer_running else "⏸️ 일시정지", key="stopwatch_start_pause"):
+        if st.button("▶️ 시작" if not None st.session_state.timer_running else "⏸️ 일시정지", key="stopwatch_start"):
             if not st.session_state.timer_running:
                 st.session_state.stopwatch_start_time = time.time()
                 st.session_state.timer_running = True
@@ -690,13 +783,13 @@ def render_stopwatch():
             st.rerun()
     
     with col2:
-        if st.button("⏹️ 정지", key="stopwatch_stop"):
+        if st.button("⏹ 정지", key="stopwatch_stop"):
             if st.session_state.timer_running and st.session_state.stopwatch_start_time is not None:
                 st.session_state.total_elapsed_time += time.time() - st.session_state.stopwatch_start_time
             st.session_state.timer_running = False
             st.session_state.stopwatch_start_time = None
             st.rerun()
-
+    
     with col3:
         if st.button("💾 기록 저장", key="stopwatch_save"):
             final_elapsed_time = elapsed_time
@@ -747,6 +840,8 @@ def next_activity(auto_start_next=False):
         st.session_state.remaining_time = current_activity['duration'] * 60
         st.session_state.timer_running = auto_start_next
         st.session_state.blink_end_time = None
+        st.session_state.show_balloons = False
+        st.session_state.balloons_end_time = None
 
 def prev_activity():
     if st.session_state.current_activity_index > 0:
@@ -755,6 +850,8 @@ def prev_activity():
         st.session_state.remaining_time = current_activity['duration'] * 60
         st.session_state.timer_running = False
         st.session_state.blink_end_time = None
+        st.session_state.show_balloons = False
+        st.session_state.balloons_end_time = None
 
 def reset_all_activities():
     st.session_state.current_activity_index = 0
@@ -764,6 +861,8 @@ def reset_all_activities():
         st.session_state.remaining_time = 0
     st.session_state.timer_running = False
     st.session_state.blink_end_time = None
+    st.session_state.show_balloons = False
+    st.session_state.balloons_end_time = None
     st.rerun()
 
 def next_pomodoro_session():
@@ -777,6 +876,8 @@ def next_pomodoro_session():
     
     st.session_state.timer_running = False
     st.session_state.blink_end_time = None
+    st.session_state.show_balloons = False
+    st.session_state.balloons_end_time = None
 
 # 메인 애플리케이션
 def main():
@@ -807,15 +908,16 @@ def main():
         - 집중력 향상과 효율적인 학습에 도움
         
         **🔹 무한 스톱워치**
-        - 시간을 측정하는 기능 (0.1초 단위)
-        - 활동 시간 기록이나 분석에 활용 (목표 시간 설정 및 달성 여부 확인 가능)
+        - 시간을 기록하는 기능 (0.1초 단위)
+        - 활동 시간 기록 및 분석에 활용 (목표 시간 설정 및 달성 여부 확인 가능)
         
         ### 시각적 표시
         - **초록색**: 충분한 시간 (50% 이상 남음)
         - **노란색**: 주의 시간 (20~50% 남음)
         - **빨간색**: 긴급 시간 (20% 미만 남음, 깜빡임 효과)
-        - **종료 시**: 빨간색 배경에 흰색 글씨 (3초간 깜빡임 후 정지)
+        - **종료 시**: 빨간색 배경에 흰색 글씨 (3초간 깜빡임 후 정지), 풍선 애니메이션 표시
         """)
 
 if __name__ == "__main__":
     main()
+```

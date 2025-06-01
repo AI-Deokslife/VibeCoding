@@ -141,7 +141,7 @@ def init_session_state():
     if 'stopwatch_records' not in st.session_state:
         st.session_state.stopwatch_records = []
 
-    if 'blink_end_time' not in st.session_state: # 깜빡임 종료 시간
+    if 'blink_end_time' not in st.session_state:
         st.session_state.blink_end_time = None
 
 # 사전 정의된 템플릿
@@ -181,7 +181,7 @@ def get_templates():
             {"name": "5팀 발표", "duration": 5},
             {"name": "피드백", "duration": 15}
         ],
-        "커스텀": [ # 기본 커스텀 템플릿 추가
+        "커스텀": [
             {"name": "활동 1", "duration": 15},
             {"name": "활동 2", "duration": 15},
             {"name": "활동 3", "duration": 10}
@@ -215,7 +215,7 @@ def get_time_color_class(remaining_time, total_time):
 
     if remaining_time <= 0:
         if st.session_state.blink_end_time is None:
-            st.session_state.blink_end_time = current_time + 3  # 3초 후 깜빡임 종료
+            st.session_state.blink_end_time = current_time + 3
         if current_time < st.session_state.blink_end_time:
             return "finished"
         else:
@@ -239,7 +239,6 @@ def render_sidebar():
         index=["구간 타이머", "기본 카운트다운", "포모도로 타이머", "무한 스톱워치"].index(st.session_state.timer_mode)
     )
     
-    # 타이머 모드 변경 시 초기화
     if timer_mode != st.session_state.timer_mode:
         st.session_state.timer_mode = timer_mode
         st.session_state.timer_running = False
@@ -252,7 +251,6 @@ def render_sidebar():
         st.session_state.activities = []
         st.session_state.blink_end_time = None
         if timer_mode == "구간 타이머":
-            # 커스텀 모드로 즉시 전환
             templates = get_templates()
             st.session_state.activities = templates["커스텀"].copy()
             if st.session_state.activities:
@@ -376,7 +374,7 @@ def render_stopwatch_settings():
     if st.session_state.stopwatch_records:
         st.sidebar.markdown("### 📊 측정 기록 (최근 5개)")
         for i, record in enumerate(reversed(st.session_state.stopwatch_records[-5:])):
-            st.sidebar.text(f"{len,st.session_state.stopwatch_records) - i - (len(st.session_state.stopwatch_records) - 5 if len(st.session_state.stopwatch_records) > 5 else 0)}. {record['purpose']}: {format_time(record['time'])}")
+            st.sidebar.text(f"{len(st.session_state.stopwatch_records) - i - (len(st.session_state.stopwatch_records) - 5 if len(st.session_state.stopwatch_records) > 5 else 0)}. {record[' purpose']}: {format_time(record['time'])}")
         
         if st.sidebar.button("기록 전체 삭제"):
             st.session_state.stopwatch_records = []
@@ -748,7 +746,7 @@ def next_activity(auto_start_next=False):
         current_activity = st.session_state.activities[st.session_state.current_activity_index]
         st.session_state.remaining_time = current_activity['duration'] * 60
         st.session_state.timer_running = auto_start_next
-        st.session_state.blink_end_time = None  # 깜빡임 상태 초기화
+        st.session_state.blink_end_time = None
 
 def prev_activity():
     if st.session_state.current_activity_index > 0:
@@ -756,7 +754,7 @@ def prev_activity():
         current_activity = st.session_state.activities[st.session_state.current_activity_index]
         st.session_state.remaining_time = current_activity['duration'] * 60
         st.session_state.timer_running = False
-        st.session_state.blink_end_time = None  # 깜빡임 상태 초기화
+        st.session_state.blink_end_time = None
 
 def reset_all_activities():
     st.session_state.current_activity_index = 0
@@ -765,7 +763,7 @@ def reset_all_activities():
     else:
         st.session_state.remaining_time = 0
     st.session_state.timer_running = False
-    st.session_state.blink_end_time = None  # 깜빡임 상태 초기화
+    st.session_state.blink_end_time = None
     st.rerun()
 
 def next_pomodoro_session():
@@ -778,7 +776,7 @@ def next_pomodoro_session():
         st.session_state.remaining_time = st.session_state.pomodoro_break_time
     
     st.session_state.timer_running = False
-    st.session_state.blink_end_time = None  # 깜빡임 상태 초기화
+    st.session_state.blink_end_time = None
 
 # 메인 애플리케이션
 def main():

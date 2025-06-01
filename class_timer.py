@@ -6,7 +6,7 @@ from typing import List, Dict
 
 # 페이지 설정
 st.set_page_config(
-    page_title="🎯 수업 타이머 & 활동 관리",
+    page_title="🎯 수업 타이머",
     page_icon="⏱️",
     layout="wide",
     initial_sidebar_state="collapsed"
@@ -45,6 +45,16 @@ st.markdown("""
         padding: 2rem;
         max-width: 100%;
     }
+    
+    /* 사이드바 숨기기 */
+    .css-1d391kg {
+        display: none;
+    }
+    
+    /* 스트림릿 기본 메뉴 숨기기 */
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    header {visibility: hidden;}
     
     /* 설정 패널 */
     .settings-panel {
@@ -88,17 +98,18 @@ st.markdown("""
         justify-content: center;
     }
     
-    /* 활동명 */
+    /* 활동명 - 가독성 개선 */
     .activity-name {
         font-size: 2rem;
         font-weight: bold;
         text-align: center;
         margin: 1rem 0;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-        text-shadow: 0 2px 4px rgba(102, 126, 234, 0.1);
+        color: #4A5568;
+        background: linear-gradient(135deg, #FFFFFF 0%, #F8FAFC 100%);
+        border: 1px solid #E2E8F0;
+        padding: 1rem;
+        border-radius: 15px;
+        box-shadow: 0 4px 12px rgba(226, 232, 240, 0.4);
     }
     
     /* 진행률 정보 */
@@ -354,73 +365,93 @@ def next_activity():
         st.session_state.timer_running = False
         st.session_state.timer_finished = False
 
-# 메인 헤더 with 도움말 버튼
-col_title, col_help = st.columns([4, 1])
+# 메인 헤더 with 도움말 버튼 - 간결하게
+header_col1, header_col2 = st.columns([6, 1])
 
-with col_title:
+with header_col1:
     st.title("🎯 수업 타이머 & 활동 관리")
-    st.markdown("선생님들을 위한 파스텔 감성의 스마트 시간 관리 도구 🌸")
 
-with col_help:
-    if st.button("❓ 사용 방법 및 팁", key="help_button"):
+with header_col2:
+    if st.button("❓ 도움말", key="help_button"):
         st.session_state.show_help = True
 
-# 도움말 모달
+# 도움말 모달 - 개선된 버전
 if st.session_state.show_help:
+    # 모달 스타일 컨테이너
     with st.container():
         st.markdown("""
-        <div style='position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 999;'></div>
-        <div style='position: fixed; top: 10%; left: 20%; width: 60%; max-height: 80%; background: white; border-radius: 20px; padding: 2rem; z-index: 1000; overflow-y: auto; box-shadow: 0 20px 40px rgba(0,0,0,0.3);'>
+        <div style='position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.8); z-index: 999; display: flex; justify-content: center; align-items: center;'>
+        </div>
         """, unsafe_allow_html=True)
         
-        st.markdown("# 📖 사용 방법 및 팁")
+        # 모달 컨텐츠
+        modal_col1, modal_col2, modal_col3 = st.columns([1, 3, 1])
         
-        st.markdown("""
-        ### 🎯 기본 사용법
-        
-        **1. 단일 타이머**
-        - 왼쪽 설정 패널에서 "단일 타이머" 선택
-        - 시간과 활동명 입력 후 "단일 타이머 설정"
-        - 오른쪽 컨트롤 패널에서 ▶️ 시작 버튼으로 타이머 시작
-        
-        **2. 단계별 활동 타이머**
-        - 왼쪽 설정 패널에서 "단계별 활동 타이머" 선택
-        - 템플릿 선택 또는 사용자 정의 활동 추가
-        - 템플릿 적용 후에도 각 활동 시간 수정 가능
-        - "시작 설정" 후 타이머 실행
-        
-        ### 🎨 시각적 표시
-        - 💚 **파스텔 그린**: 충분한 시간 (50% 이상)
-        - 💛 **파스텔 옐로우**: 주의 필요 (20~50%)
-        - 💗 **파스텔 핑크**: 시간 부족 (20% 미만)
-        
-        ### 🔔 알림 기능
-        - **비프음**: 활동 완료 시 3번의 비프음
-        - **풍선 효과**: 시각적 축하 애니메이션
-        - **화면 깜빡임**: 놓치기 어려운 시각적 알림
-        
-        ### 💡 활용 팁
-        - **12rem 대형 타이머**: 교실 어디서든 잘 보임
-        - **템플릿 커스터마이징**: 기본 템플릿을 기반으로 시간 조정
-        - **활동 기록**: 수업 패턴 분석으로 시간 관리 개선
-        - **실시간 업데이트**: 1초마다 정확한 시간 표시
-        
-        ### 🎪 교육 현장 활용
-        - **모둠 활동**: 공정한 시간 배분
-        - **발표 시간**: 학생별 동일한 시간 보장
-        - **실험 수업**: 단계별 정확한 시간 관리
-        - **집중 학습**: 포모도로 기법 활용
-        """)
-        
-        if st.button("✅ 닫기", key="close_help"):
-            st.session_state.show_help = False
-            st.rerun()
-        
-        st.markdown('</div>', unsafe_allow_html=True)
+        with modal_col2:
+            with st.container():
+                st.markdown("""
+                <div style='background: white; border-radius: 20px; padding: 2rem; max-height: 80vh; overflow-y: auto; box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3); position: relative; z-index: 1000;'>
+                """, unsafe_allow_html=True)
+                
+                # 헤더와 닫기 버튼
+                header_col1, header_col2 = st.columns([5, 1])
+                
+                with header_col1:
+                    st.markdown("# 📖 사용 방법 및 팁")
+                
+                with header_col2:
+                    if st.button("✕", key="close_help_x", help="닫기"):
+                        st.session_state.show_help = False
+                        st.rerun()
+                
+                st.markdown("""
+                ### 🎯 기본 사용법
+                
+                **1. 단일 타이머**
+                - 왼쪽 설정 패널에서 "단일 타이머" 선택
+                - 시간과 활동명 입력 후 "단일 타이머 설정"
+                - 오른쪽 컨트롤 패널에서 ▶️ 시작 버튼으로 타이머 시작
+                
+                **2. 단계별 활동 타이머**
+                - 왼쪽 설정 패널에서 "단계별 활동 타이머" 선택
+                - 템플릿 선택 또는 사용자 정의 활동 추가
+                - 템플릿 적용 후에도 각 활동 시간 수정 가능
+                - "시작 설정" 후 타이머 실행
+                
+                ### 🎨 시각적 표시
+                - 💚 **파스텔 그린**: 충분한 시간 (50% 이상)
+                - 💛 **파스텔 옐로우**: 주의 필요 (20~50%)
+                - 💗 **파스텔 핑크**: 시간 부족 (20% 미만)
+                
+                ### 🔔 알림 기능
+                - **비프음**: 활동 완료 시 3번의 비프음
+                - **풍선 효과**: 시각적 축하 애니메이션
+                - **화면 깜빡임**: 놓치기 어려운 시각적 알림
+                
+                ### 💡 활용 팁
+                - **12rem 대형 타이머**: 교실 어디서든 잘 보임
+                - **템플릿 커스터마이징**: 기본 템플릿을 기반으로 시간 조정
+                - **활동 기록**: 수업 패턴 분석으로 시간 관리 개선
+                - **실시간 업데이트**: 1초마다 정확한 시간 표시
+                
+                ### 🎪 교육 현장 활용
+                - **모둠 활동**: 공정한 시간 배분
+                - **발표 시간**: 학생별 동일한 시간 보장
+                - **실험 수업**: 단계별 정확한 시간 관리
+                - **집중 학습**: 포모도로 기법 활용
+                """)
+                
+                # 하단 닫기 버튼
+                col1, col2, col3 = st.columns([1, 1, 1])
+                with col2:
+                    if st.button("✅ 확인", key="close_help_confirm", use_container_width=True):
+                        st.session_state.show_help = False
+                        st.rerun()
+                
+                st.markdown('</div>', unsafe_allow_html=True)
 
 st.markdown("---")
-
-# 메인 화면 - 3단 분할 레이아웃
+# 메인 화면 - 3분할 레이아웃
 settings_col, timer_col, control_col = st.columns([1, 2, 1])
 
 # 타이머 업데이트
@@ -679,14 +710,11 @@ if st.session_state.activity_log:
         st.session_state.activity_log = []
         st.rerun()
 
-# 푸터
-st.markdown("---")
+# 푸터 - 간소화
 st.markdown(
     """
-    <div style='text-align: center; color: #8B5CF6; font-size: 0.9em; background: linear-gradient(135deg, #F3E8FF 0%, #E0E7FF 100%); padding: 1rem; border-radius: 15px; margin-top: 2rem; border: 1px solid #E0E7FF;'>
-        🌸 수업 타이머 & 활동 관리 도구 v4.0 | 
-        교육 현장을 위한 파스텔 감성 시간 관리 솔루션 ✨<br>
-        🔔 비프음 알람 | 🎈 풍선 효과 | ⚙️ 템플릿 커스터마이징 | 📊 실시간 대시보드
+    <div style='text-align: center; color: #8B5CF6; font-size: 0.9em; background: linear-gradient(135deg, #F3E8FF 0%, #E0E7FF 100%); padding: 0.8rem; border-radius: 15px; margin-top: 1rem; border: 1px solid #E0E7FF;'>
+        🌸 수업 타이머 v4.0 | 🔔 비프음 알람 | 🎈 풍선 효과 | ⚙️ 템플릿 커스터마이징
     </div>
     """, 
     unsafe_allow_html=True

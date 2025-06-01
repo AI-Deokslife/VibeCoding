@@ -87,7 +87,7 @@ st.markdown("""
     
     /* 타이머 디스플레이 */
     .timer-display {
-        font-size: 4rem;
+        font-size: 8rem;
         font-weight: bold;
         text-align: center;
         padding: 2rem;

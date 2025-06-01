@@ -511,11 +511,11 @@ def get_enhanced_templates() -> Dict[str, List[Dict]]:
             {"name": "질의응답", "duration": 10},
             {"name": "피드백 정리", "duration": 5}
         ],
-        "포모도로 (25분)": [
+        "포모도로 (30분)": [
             {"name": "집중 시간", "duration": 25},
             {"name": "휴식 시간", "duration": 5}
         ],
-        "포모도로 긴 휴식 (35분)": [
+        "포모도로 긴 휴식 (40분)": [
             {"name": "집중 시간", "duration": 25},
             {"name": "긴 휴식", "duration": 15}
         ],
@@ -525,6 +525,17 @@ def get_enhanced_templates() -> Dict[str, List[Dict]]:
             {"name": "검토 시간", "duration": 5}
         ]
     }
+
+def validate_activities(activities: List[Dict]) -> List[Dict]:
+    """활동 목록의 duration 값들을 안전하게 검증"""
+    validated = []
+    for activity in activities:
+        validated_activity = {
+            "name": str(activity.get("name", "활동")),
+            "duration": max(1, int(activity.get("duration", 1)))
+        }
+        validated.append(validated_activity)
+    return validated
 
 def play_enhanced_alarm(volume: float = 0.5):
     """개선된 알람 사운드"""
@@ -640,42 +651,15 @@ def load_settings():
 initialize_session_state()
 load_settings()
 
-# 키보드 단축키 지원
-st.markdown("""
-<script>
-document.addEventListener('keydown', function(e) {
-    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-    
-    switch(e.key) {
-        case ' ':  // 스페이스바: 시작/일시정지
-        case 'Enter':
-            e.preventDefault();
-            document.querySelector('[data-testid="stButton"] button')?.click();
-            break;
-        case 'r':  // R: 리셋
-        case 'R':
-            e.preventDefault();
-            // 리셋 버튼 클릭 로직
-            break;
-        case 'f':  // F: 풀스크린
-        case 'F':
-            e.preventDefault();
-            // 풀스크린 토글 로직
-            break;
-    }
-});
-</script>
-""", unsafe_allow_html=True)
-
 # 헤더
 st.markdown("""
 <div class="app-header">
     <h1 class="app-title">🎯 수업 타이머</h1>
     <div style="display: flex; gap: 1rem; align-items: center;">
-        <span style="font-size: 0.9rem; opacity: 0.8;">스페이스바: 시작/정지 | R: 리셋 | F: 풀스크린</span>
+        <span style="font-size: 0.9rem; opacity: 0.8;">현재 시각: {}</span>
     </div>
 </div>
-""", unsafe_allow_html=True)
+""".format(datetime.datetime.now().strftime("%H:%M:%S")), unsafe_allow_html=True)
 
 # 설정 패널 (확장 가능)
 with st.expander("⚙️ 고급 설정"):
@@ -711,11 +695,6 @@ if st.session_state.show_help:
         **2. 단계별 활동 타이머**
         - 템플릿 선택 또는 직접 추가 → "시작 설정" → ▶️ 시작
         
-        ### ⌨️ 키보드 단축키
-        - **스페이스바 / Enter**: 시작/일시정지
-        - **R**: 리셋
-        - **F**: 풀스크린 모드
-        
         ### 🎨 색상 의미
         - 💚 **초록**: 충분한 시간 (70% 이상)
         - 💙 **파랑**: 안정적 (50-70%)
@@ -728,6 +707,7 @@ if st.session_state.show_help:
         - 일시정지/재개 기능
         - 활동 기록 자동 저장
         - 반응형 디자인 지원
+        - CSV 파일로 기록 다운로드
         """)
 
 st.markdown("---")
@@ -782,10 +762,15 @@ with settings_col:
                 st.session_state.current_time = total_seconds
                 st.session_state.total_time = total_seconds
                 st.session_state.current_activity = activity_name
-                st.session_state.activities = [{"name": activity_name, "duration": minutes + seconds/60}]
+                # 안전한 활동 생성
+                st.session_state.activities = validate_activities([{
+                    "name": activity_name, 
+                    "duration": max(1, minutes + seconds/60)
+                }])
                 st.session_state.activity_index = 0
                 st.session_state.timer_running = False
                 st.session_state.timer_finished = False
+                st.session_state.paused_time = 0
                 st.success("✅ 설정 완료!")
                 time.sleep(1)
                 st.rerun()
@@ -800,14 +785,17 @@ with settings_col:
         
         if template_choice != "사용자 정의":
             if st.button("📋 템플릿 적용", use_container_width=True):
-                st.session_state.activities = templates[template_choice].copy()
+                # 안전한 템플릿 적용
+                st.session_state.activities = validate_activities(templates[template_choice].copy())
                 if st.session_state.activities:
-                    st.session_state.current_activity = st.session_state.activities[0]["name"]
-                    st.session_state.current_time = st.session_state.activities[0]["duration"] * 60
-                    st.session_state.total_time = st.session_state.activities[0]["duration"] * 60
+                    first_activity = st.session_state.activities[0]
+                    st.session_state.current_activity = first_activity["name"]
+                    st.session_state.current_time = first_activity["duration"] * 60
+                    st.session_state.total_time = first_activity["duration"] * 60
                     st.session_state.activity_index = 0
                     st.session_state.timer_running = False
                     st.session_state.timer_finished = False
+                    st.session_state.paused_time = 0
                 st.success("✅ 템플릿 적용!")
                 time.sleep(1)
                 st.rerun()
@@ -823,10 +811,9 @@ with settings_col:
             
             if st.button("➕ 활동 추가", use_container_width=True):
                 if new_name.strip():
-                    st.session_state.activities.append({
-                        "name": new_name.strip(),
-                        "duration": new_duration
-                    })
+                    # 안전한 활동 추가
+                    new_activity = {"name": new_name.strip(), "duration": max(1, new_duration)}
+                    st.session_state.activities.append(new_activity)
                     st.success(f"✅ '{new_name}' 추가!")
                     time.sleep(1)
                     st.rerun()
@@ -851,11 +838,13 @@ with settings_col:
                     st.markdown(f"**{icon} {activity['name']}**{status}")
                 
                 with col2:
+                    # 안전한 duration 값 보장
+                    safe_duration = max(1, int(activity.get('duration', 1)))
                     new_duration = st.number_input(
                         "분", 
                         min_value=1, 
                         max_value=120, 
-                        value=int(activity['duration']), 
+                        value=safe_duration, 
                         key=f"duration_{i}",
                         label_visibility="collapsed"
                     )
@@ -884,17 +873,24 @@ with settings_col:
                     st.session_state.current_time = 0
                     st.session_state.total_time = 0
                     st.session_state.activity_index = 0
+                    st.session_state.timer_running = False
+                    st.session_state.timer_finished = False
+                    st.session_state.paused_time = 0
                     st.rerun()
             
             with mgmt_col2:
                 if st.button("🎯 시작설정", use_container_width=True):
                     if st.session_state.activities:
-                        st.session_state.current_activity = st.session_state.activities[0]["name"]
-                        st.session_state.current_time = st.session_state.activities[0]["duration"] * 60
-                        st.session_state.total_time = st.session_state.activities[0]["duration"] * 60
+                        # 안전한 활동 검증
+                        st.session_state.activities = validate_activities(st.session_state.activities)
+                        first_activity = st.session_state.activities[0]
+                        st.session_state.current_activity = first_activity["name"]
+                        st.session_state.current_time = first_activity["duration"] * 60
+                        st.session_state.total_time = first_activity["duration"] * 60
                         st.session_state.activity_index = 0
                         st.session_state.timer_running = False
                         st.session_state.timer_finished = False
+                        st.session_state.paused_time = 0
                         st.success("✅ 설정 완료!")
                         time.sleep(1)
                         st.rerun()
@@ -967,6 +963,8 @@ with control_col:
         st.session_state.activity_index = 0
         st.session_state.paused_time = 0
         if st.session_state.activities:
+            # 안전한 활동 검증
+            st.session_state.activities = validate_activities(st.session_state.activities)
             st.session_state.current_activity = st.session_state.activities[0]["name"]
     
     # 다음 활동
@@ -986,6 +984,8 @@ with control_col:
                 
                 # 다음 활동으로 이동
                 st.session_state.activity_index += 1
+                # 안전한 활동 검증
+                st.session_state.activities = validate_activities(st.session_state.activities)
                 current_act = st.session_state.activities[st.session_state.activity_index]
                 st.session_state.current_activity = current_act["name"]
                 st.session_state.current_time = current_act["duration"] * 60

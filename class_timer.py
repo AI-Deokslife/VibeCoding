@@ -25,8 +25,7 @@ def initialize_session_state():
         'timer_type': "single",
         'start_time': None,
         'activity_log': [],
-        'timer_finished': False,
-        'fullscreen_mode': False
+        'timer_finished': False
     }
     
     for key, value in defaults.items():
@@ -45,57 +44,40 @@ st.markdown("""
         padding: 2rem;
     }
     
-    /* 전체화면 모드 */
-    .fullscreen-timer {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100vw;
-        height: 100vh;
-        background: linear-gradient(135deg, #FFFFFF 0%, #F0F4FF 100%);
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        z-index: 9999;
-        padding: 2rem;
-    }
-    
-    .fullscreen-timer-display {
-        font-size: 8rem;
-        font-weight: bold;
-        text-align: center;
-        padding: 4rem;
-        border-radius: 30px;
-        margin: 2rem 0;
-        box-shadow: 0 20px 40px rgba(149, 157, 165, 0.3);
-        border: 3px solid #E8F4FD;
-        color: #4A5568;
-        min-width: 400px;
-    }
-    
-    .fullscreen-activity-name {
-        font-size: 3rem;
-        font-weight: bold;
-        text-align: center;
-        margin: 2rem 0;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-    }
-    
-    /* 타이머 디스플레이 */
+    /* 타이머 디스플레이 - 크기 증가 및 여백 감소 */
     .timer-display {
         font-size: 12rem;
         font-weight: bold;
         text-align: center;
-        padding: 2rem;
+        padding: 1.5rem;
         border-radius: 20px;
-        margin: 1rem 0;
+        margin: 0.5rem 0;
         box-shadow: 0 8px 20px rgba(149, 157, 165, 0.2);
         border: 2px solid #E8F4FD;
         color: #4A5568;
+        min-height: 200px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    /* 컨트롤 버튼 영역 */
+    .control-panel {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        padding: 1rem;
+        align-items: stretch;
+        justify-content: center;
+        min-height: 200px;
+    }
+    
+    .control-button {
+        padding: 1rem 1.5rem;
+        font-size: 1.2rem;
+        font-weight: 600;
+        border-radius: 15px;
+        min-height: 50px;
     }
     
     /* 활동명 */
@@ -122,17 +104,6 @@ st.markdown("""
         border-radius: 10px;
         backdrop-filter: blur(10px);
         border: 1px solid #E5E7EB;
-    }
-    
-    /* 카드 스타일들 */
-    .status-card {
-        background: linear-gradient(135deg, #F0F9FF 0%, #F3E8FF 100%);
-        border-radius: 15px;
-        padding: 1.5rem;
-        margin: 1rem 0;
-        border-left: 4px solid #DBEAFE;
-        box-shadow: 0 4px 12px rgba(219, 234, 254, 0.3);
-        border: 1px solid #E0E7FF;
     }
     
     /* 사이드바 스타일 */
@@ -311,191 +282,112 @@ st.title("🎯 수업 타이머 & 활동 관리")
 st.markdown("선생님들을 위한 파스텔 감성의 스마트 시간 관리 도구 🌸")
 st.markdown("---")
 
-# 전체화면 모드 체크
-if st.session_state.fullscreen_mode:
-    # 전체화면용 CSS 추가
-    st.markdown("""
-    <style>
-        .fullscreen-container {
-            text-align: center;
-            padding: 3rem 0;
-        }
-        .fullscreen-title {
-            font-size: 3rem;
-            font-weight: bold;
-            margin: 2rem 0;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-        .fullscreen-timer-big {
-            font-size: 8rem;
-            font-weight: bold;
-            text-align: center;
-            padding: 3rem;
-            border-radius: 30px;
-            margin: 2rem auto;
-            box-shadow: 0 20px 40px rgba(149, 157, 165, 0.3);
-            border: 3px solid #E8F4FD;
-            color: #4A5568;
-            max-width: 600px;
-        }
-        .fullscreen-info {
-            font-size: 2rem;
-            color: #6B7280;
-            margin: 2rem 0;
-        }
-    </style>
-    """, unsafe_allow_html=True)
+# 사이드바 - 설정 패널
+with st.sidebar:
+    st.header("⚙️ 타이머 설정")
     
-    # 사이드바 숨기기
-    st.markdown("""
-    <style>
-        .css-1d391kg {
-            display: none;
-        }
-        .main .block-container {
-            padding-top: 1rem;
-            max-width: 100%;
-        }
-    </style>
-    """, unsafe_allow_html=True)
+    timer_mode = st.selectbox(
+        "타이머 모드 선택",
+        ["단일 타이머", "단계별 활동 타이머"],
+        key="timer_mode_select"
+    )
     
-    # 전체화면 모드 렌더링
-    remaining_time = st.session_state.current_time
-    total_time = st.session_state.total_time
-    timer_color = get_timer_color(remaining_time, total_time)
-    
-    # 진행률 계산
-    progress = max(0, min(1.0, (total_time - remaining_time) / total_time)) if total_time > 0 else 0
-    
-    # 전체화면 레이아웃
-    st.markdown('<div class="fullscreen-container">', unsafe_allow_html=True)
-    
-    # 활동명 (큰 제목)
-    st.markdown(f"""
-    <div class="fullscreen-title">
-        📚 {st.session_state.current_activity if st.session_state.current_activity else "수업 활동"}
-    </div>
-    """, unsafe_allow_html=True)
-    
-    # 대형 타이머 (스트림릿 네이티브 방식)
-    st.markdown(f"""
-    <div class="fullscreen-timer-big" style="background: {timer_color};">
-        {format_time(remaining_time)}
-    </div>
-    """, unsafe_allow_html=True)
-    
-    # 진행률 바 (스트림릿 네이티브)
-    if total_time > 0:
-        st.progress(progress)
-    
-    # 정보 표시
-    st.markdown(f"""
-    <div class="fullscreen-info">
-        진행률: {progress * 100:.1f}% | 남은 시간: {format_time(remaining_time)} | 전체 시간: {format_time(total_time)}
-    </div>
-    """, unsafe_allow_html=True)
-    
-    st.markdown('</div>', unsafe_allow_html=True)
-    
-    # 컨트롤 버튼들 (전체화면용)
-    st.markdown("---")
-    col1, col2, col3, col4, col5 = st.columns([1, 1, 1, 1, 1])
-    
-    with col1:
-        if not st.session_state.timer_running:
-            if st.button("▶️ 시작", key="fullscreen_start", use_container_width=True):
-                start_timer()
+    if timer_mode == "단일 타이머":
+        st.session_state.timer_type = "single"
+        
+        st.subheader("⏰ 시간 설정")
+        minutes = st.number_input("분", min_value=0, max_value=120, value=10, key="single_minutes")
+        seconds = st.number_input("초", min_value=0, max_value=59, value=0, key="single_seconds")
+        
+        activity_name = st.text_input("활동명", value="수업 활동", key="single_activity_name")
+        
+        if st.button("✅ 단일 타이머 설정", key="set_single_timer", use_container_width=True):
+            total_seconds = minutes * 60 + seconds
+            if total_seconds > 0:
+                st.session_state.current_time = total_seconds
+                st.session_state.total_time = total_seconds
+                st.session_state.current_activity = activity_name
+                st.session_state.activities = [{"name": activity_name, "duration": minutes + seconds/60}]
+                st.session_state.activity_index = 0
+                st.session_state.timer_running = False
+                st.session_state.timer_finished = False
+                st.success("✅ 타이머가 설정되었습니다!")
+                time.sleep(1)
                 st.rerun()
-        else:
-            if st.button("⏸️ 일시정지", key="fullscreen_pause", use_container_width=True):
-                stop_timer()
-                st.rerun()
+            else:
+                st.error("⚠️ 0보다 큰 시간을 입력해주세요!")
     
-    with col2:
-        if st.button("🔄 리셋", key="fullscreen_reset", use_container_width=True):
-            reset_timer()
-            st.rerun()
-    
-    with col3:
-        if st.session_state.timer_type == "multi" and len(st.session_state.activities) > 1:
-            if st.button("⏭️ 다음 활동", key="fullscreen_next", use_container_width=True):
-                next_activity()
-                st.rerun()
-    
-    with col4:
-        if st.button("🔙 일반 화면", key="exit_fullscreen", use_container_width=True):
-            st.session_state.fullscreen_mode = False
-            st.rerun()
-    
-    with col5:
-        if st.button("🔄 새로고침", key="fullscreen_refresh", use_container_width=True):
-            st.rerun()
-    
-    # 활동 정보 (전체화면용)
-    if st.session_state.timer_type == "multi" and st.session_state.activities:
-        st.markdown("---")
-        col1, col2, col3 = st.columns(3)
+    else:
+        st.session_state.timer_type = "multi"
         
-        total_activities = len(st.session_state.activities)
-        current_index = st.session_state.activity_index + 1
-        remaining_activities = total_activities - current_index
+        st.subheader("📚 템플릿 선택")
+        templates = get_template_activities()
+        template_choice = st.selectbox("수업 템플릿", ["사용자 정의"] + list(templates.keys()))
         
-        with col1:
-            st.metric("전체 활동", f"{total_activities}개", delta=None)
-        with col2:
-            st.metric("현재 활동", f"{current_index}번째", delta=None)
-        with col3:
-            st.metric("남은 활동", f"{remaining_activities}개", delta=None)
-
-else:
-    # 사이드바 - 설정 패널
-    with st.sidebar:
-        st.header("⚙️ 타이머 설정")
-        
-        timer_mode = st.selectbox(
-            "타이머 모드 선택",
-            ["단일 타이머", "단계별 활동 타이머"],
-            key="timer_mode_select"
-        )
-        
-        if timer_mode == "단일 타이머":
-            st.session_state.timer_type = "single"
-            
-            st.subheader("⏰ 시간 설정")
-            minutes = st.number_input("분", min_value=0, max_value=120, value=10, key="single_minutes")
-            seconds = st.number_input("초", min_value=0, max_value=59, value=0, key="single_seconds")
-            
-            activity_name = st.text_input("활동명", value="수업 활동", key="single_activity_name")
-            
-            if st.button("✅ 단일 타이머 설정", key="set_single_timer", use_container_width=True):
-                total_seconds = minutes * 60 + seconds
-                if total_seconds > 0:
-                    st.session_state.current_time = total_seconds
-                    st.session_state.total_time = total_seconds
-                    st.session_state.current_activity = activity_name
-                    st.session_state.activities = [{"name": activity_name, "duration": minutes + seconds/60}]
+        if template_choice != "사용자 정의":
+            if st.button("📋 템플릿 적용", key="apply_template", use_container_width=True):
+                st.session_state.activities = templates[template_choice].copy()
+                if st.session_state.activities:
+                    st.session_state.current_activity = st.session_state.activities[0]["name"]
+                    st.session_state.current_time = st.session_state.activities[0]["duration"] * 60
+                    st.session_state.total_time = st.session_state.activities[0]["duration"] * 60
                     st.session_state.activity_index = 0
                     st.session_state.timer_running = False
                     st.session_state.timer_finished = False
-                    st.success("✅ 타이머가 설정되었습니다!")
+                st.success(f"✅ '{template_choice}' 템플릿이 적용되었습니다!")
+                time.sleep(1)
+                st.rerun()
+        
+        st.subheader("📝 사용자 정의 활동")
+        
+        # 활동 추가
+        with st.expander("➕ 새 활동 추가"):
+            new_activity_name = st.text_input("활동명", key="new_activity_name")
+            new_activity_duration = st.number_input("시간 (분)", min_value=1, max_value=60, value=10, key="new_activity_duration")
+            
+            if st.button("➕ 활동 추가", key="add_activity", use_container_width=True):
+                if new_activity_name.strip():
+                    if 'activities' not in st.session_state:
+                        st.session_state.activities = []
+                    st.session_state.activities.append({
+                        "name": new_activity_name.strip(),
+                        "duration": new_activity_duration
+                    })
+                    st.success(f"✅ '{new_activity_name}' 활동이 추가되었습니다!")
                     time.sleep(1)
                     st.rerun()
                 else:
-                    st.error("⚠️ 0보다 큰 시간을 입력해주세요!")
+                    st.error("⚠️ 활동명을 입력해주세요!")
         
-        else:
-            st.session_state.timer_type = "multi"
+        # 현재 활동 목록 표시
+        if st.session_state.activities:
+            st.subheader("📋 현재 활동 목록")
+            for i, activity in enumerate(st.session_state.activities):
+                col1, col2 = st.columns([4, 1])
+                with col1:
+                    if i == st.session_state.activity_index:
+                        st.markdown(f"**▶️ {activity['name']} ({activity['duration']}분)**")
+                    else:
+                        st.write(f"{i+1}. {activity['name']} ({activity['duration']}분)")
+                with col2:
+                    if st.button("🗑️", key=f"remove_{i}", help="활동 삭제"):
+                        st.session_state.activities.pop(i)
+                        if st.session_state.activity_index >= len(st.session_state.activities):
+                            st.session_state.activity_index = max(0, len(st.session_state.activities) - 1)
+                        st.rerun()
             
-            st.subheader("📚 템플릿 선택")
-            templates = get_template_activities()
-            template_choice = st.selectbox("수업 템플릿", ["사용자 정의"] + list(templates.keys()))
+            col_btn1, col_btn2 = st.columns(2)
+            with col_btn1:
+                if st.button("🗑️ 전체 삭제", key="clear_activities", use_container_width=True):
+                    st.session_state.activities = []
+                    st.session_state.current_activity = ""
+                    st.session_state.current_time = 0
+                    st.session_state.total_time = 0
+                    st.session_state.activity_index = 0
+                    st.rerun()
             
-            if template_choice != "사용자 정의":
-                if st.button("📋 템플릿 적용", key="apply_template", use_container_width=True):
-                    st.session_state.activities = templates[template_choice].copy()
+            with col_btn2:
+                if st.button("🎯 시작 설정", key="set_multi_timer", use_container_width=True):
                     if st.session_state.activities:
                         st.session_state.current_activity = st.session_state.activities[0]["name"]
                         st.session_state.current_time = st.session_state.activities[0]["duration"] * 60
@@ -503,156 +395,93 @@ else:
                         st.session_state.activity_index = 0
                         st.session_state.timer_running = False
                         st.session_state.timer_finished = False
-                    st.success(f"✅ '{template_choice}' 템플릿이 적용되었습니다!")
-                    time.sleep(1)
-                    st.rerun()
-            
-            st.subheader("📝 사용자 정의 활동")
-            
-            # 활동 추가
-            with st.expander("➕ 새 활동 추가"):
-                new_activity_name = st.text_input("활동명", key="new_activity_name")
-                new_activity_duration = st.number_input("시간 (분)", min_value=1, max_value=60, value=10, key="new_activity_duration")
-                
-                if st.button("➕ 활동 추가", key="add_activity", use_container_width=True):
-                    if new_activity_name.strip():
-                        if 'activities' not in st.session_state:
-                            st.session_state.activities = []
-                        st.session_state.activities.append({
-                            "name": new_activity_name.strip(),
-                            "duration": new_activity_duration
-                        })
-                        st.success(f"✅ '{new_activity_name}' 활동이 추가되었습니다!")
+                        st.success("✅ 활동이 설정되었습니다!")
                         time.sleep(1)
                         st.rerun()
-                    else:
-                        st.error("⚠️ 활동명을 입력해주세요!")
-            
-            # 현재 활동 목록 표시
-            if st.session_state.activities:
-                st.subheader("📋 현재 활동 목록")
-                for i, activity in enumerate(st.session_state.activities):
-                    col1, col2 = st.columns([4, 1])
-                    with col1:
-                        if i == st.session_state.activity_index:
-                            st.markdown(f"**▶️ {activity['name']} ({activity['duration']}분)**")
-                        else:
-                            st.write(f"{i+1}. {activity['name']} ({activity['duration']}분)")
-                    with col2:
-                        if st.button("🗑️", key=f"remove_{i}", help="활동 삭제"):
-                            st.session_state.activities.pop(i)
-                            if st.session_state.activity_index >= len(st.session_state.activities):
-                                st.session_state.activity_index = max(0, len(st.session_state.activities) - 1)
-                            st.rerun()
-                
-                col_btn1, col_btn2 = st.columns(2)
-                with col_btn1:
-                    if st.button("🗑️ 전체 삭제", key="clear_activities", use_container_width=True):
-                        st.session_state.activities = []
-                        st.session_state.current_activity = ""
-                        st.session_state.current_time = 0
-                        st.session_state.total_time = 0
-                        st.session_state.activity_index = 0
-                        st.rerun()
-                
-                with col_btn2:
-                    if st.button("🎯 시작 설정", key="set_multi_timer", use_container_width=True):
-                        if st.session_state.activities:
-                            st.session_state.current_activity = st.session_state.activities[0]["name"]
-                            st.session_state.current_time = st.session_state.activities[0]["duration"] * 60
-                            st.session_state.total_time = st.session_state.activities[0]["duration"] * 60
-                            st.session_state.activity_index = 0
-                            st.session_state.timer_running = False
-                            st.session_state.timer_finished = False
-                            st.success("✅ 활동이 설정되었습니다!")
-                            time.sleep(1)
-                            st.rerun()
 
-    # 메인 화면 - 일반 모드
-    # 타이머 업데이트
-    update_timer()
+# 메인 화면 - 타이머 업데이트
+update_timer()
+
+# 시간 종료 처리
+if st.session_state.timer_finished:
+    if st.session_state.timer_type == "multi" and st.session_state.activity_index < len(st.session_state.activities) - 1:
+        st.balloons()
+        st.success(f"🎉 '{st.session_state.current_activity}' 활동이 완료되었습니다!")
+        
+        # 현재 활동 로그 추가
+        current_act = st.session_state.activities[st.session_state.activity_index]
+        st.session_state.activity_log.append({
+            "활동명": current_act["name"],
+            "계획 시간": f"{current_act['duration']}분",
+            "실제 소요 시간": format_time(current_act["duration"] * 60),
+            "완료 시각": datetime.datetime.now().strftime("%H:%M:%S")
+        })
+        
+        if st.button("➡️ 다음 활동으로", key="auto_next", use_container_width=True):
+            next_activity()
+            st.rerun()
+    else:
+        st.balloons()
+        st.success("🎉 모든 활동이 완료되었습니다!")
+        st.session_state.timer_finished = False
+
+# 현재 활동명 표시
+if st.session_state.current_activity:
+    st.markdown(f"""
+    <div class="activity-name">
+        📚 {st.session_state.current_activity}
+    </div>
+    """, unsafe_allow_html=True)
+
+# 메인 타이머 영역 - 가로 배치
+timer_col, control_col = st.columns([3, 1])
+
+with timer_col:
+    # 타이머 디스플레이
+    remaining_time = st.session_state.current_time
+    total_time = st.session_state.total_time
     
-    # 시간 종료 처리
-    if st.session_state.timer_finished:
-        if st.session_state.timer_type == "multi" and st.session_state.activity_index < len(st.session_state.activities) - 1:
-            st.balloons()
-            st.success(f"🎉 '{st.session_state.current_activity}' 활동이 완료되었습니다!")
-            
-            # 현재 활동 로그 추가
-            current_act = st.session_state.activities[st.session_state.activity_index]
-            st.session_state.activity_log.append({
-                "활동명": current_act["name"],
-                "계획 시간": f"{current_act['duration']}분",
-                "실제 소요 시간": format_time(current_act["duration"] * 60),
-                "완료 시각": datetime.datetime.now().strftime("%H:%M:%S")
-            })
-            
-            if st.button("➡️ 다음 활동으로", key="auto_next", use_container_width=True):
-                next_activity()
-                st.rerun()
-        else:
-            st.balloons()
-            st.success("🎉 모든 활동이 완료되었습니다!")
-            st.session_state.timer_finished = False
-
-    col1, col2, col3 = st.columns([1, 2, 1])
-
-    with col2:
-        # 현재 활동명 표시
-        if st.session_state.current_activity:
-            st.markdown(f"""
-            <div class="activity-name">
-                📚 {st.session_state.current_activity}
-            </div>
-            """, unsafe_allow_html=True)
-        
-        # 타이머 디스플레이
-        remaining_time = st.session_state.current_time
-        total_time = st.session_state.total_time
-        
-        timer_color = get_timer_color(remaining_time, total_time)
+    timer_color = get_timer_color(remaining_time, total_time)
+    
+    st.markdown(f"""
+    <div class="timer-display" style="background: {timer_color};">
+        {format_time(remaining_time)}
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # 진행률 표시
+    if total_time > 0:
+        progress = max(0, min(1.0, (total_time - remaining_time) / total_time))
+        st.progress(progress, text=f"진행률: {progress * 100:.1f}%")
         
         st.markdown(f"""
-        <div class="timer-display" style="background: {timer_color};">
-            {format_time(remaining_time)}
+        <div class="progress-info">
+            남은 시간: {format_time(remaining_time)} | 전체 시간: {format_time(total_time)}
         </div>
         """, unsafe_allow_html=True)
-        
-        # 진행률 표시
-        if total_time > 0:
-            progress = max(0, min(1.0, (total_time - remaining_time) / total_time))
-            st.progress(progress, text=f"진행률: {progress * 100:.1f}%")
-            
-            st.markdown(f"""
-            <div class="progress-info">
-                남은 시간: {format_time(remaining_time)} | 전체 시간: {format_time(total_time)}
-            </div>
-            """, unsafe_allow_html=True)
-        
-        # 컨트롤 버튼들
-        col_btn1, col_btn2, col_btn3, col_btn4 = st.columns(4)
-        
-        with col_btn1:
-            if not st.session_state.timer_running:
-                if st.button("▶️ 시작", key="start", use_container_width=True):
-                    start_timer()
-            else:
-                if st.button("⏸️ 일시정지", key="pause", use_container_width=True):
-                    stop_timer()
-        
-        with col_btn2:
-            if st.button("🔄 리셋", key="reset", use_container_width=True):
-                reset_timer()
-        
-        with col_btn3:
-            if st.session_state.timer_type == "multi" and len(st.session_state.activities) > 1:
-                if st.button("⏭️ 다음", key="next", use_container_width=True):
-                    next_activity()
-        
-        with col_btn4:
-            if st.button("🖥️ 전체화면", key="fullscreen", use_container_width=True):
-                st.session_state.fullscreen_mode = True
-                st.rerun()
+
+with control_col:
+    # 컨트롤 버튼들 - 세로 배치
+    st.markdown('<div class="control-panel">', unsafe_allow_html=True)
+    
+    # 시작/일시정지 버튼
+    if not st.session_state.timer_running:
+        if st.button("▶️ 시작", key="start", use_container_width=True):
+            start_timer()
+    else:
+        if st.button("⏸️ 일시정지", key="pause", use_container_width=True):
+            stop_timer()
+    
+    # 리셋 버튼
+    if st.button("🔄 리셋", key="reset", use_container_width=True):
+        reset_timer()
+    
+    # 다음 활동 버튼 (다단계일 때만)
+    if st.session_state.timer_type == "multi" and len(st.session_state.activities) > 1:
+        if st.button("⏭️ 다음 활동", key="next", use_container_width=True):
+            next_activity()
+    
+    st.markdown('</div>', unsafe_allow_html=True)
 
     # 활동 현황 표시
     if st.session_state.timer_type == "multi" and st.session_state.activities:
@@ -704,15 +533,15 @@ else:
         - 💗 **파스텔 핑크**: 시간 부족 (20% 미만)
         
         ### 💡 활용 팁
-        - **🖥️ 전체화면** 버튼으로 대형 화면 표시
+        - **세로 컨트롤**: 타이머 옆 버튼으로 간편한 조작
         - **활동 기록**으로 수업 패턴 분석
         - **템플릿 활용**으로 효율적 시간 관리
         - **실시간 업데이트**로 정확한 시간 표시
         
         ### 🔧 새로운 기능
-        - **전체화면 모드**: 프로젝터나 대형 모니터에 최적화
+        - **12rem 대형 타이머**: 멀리서도 잘 보이는 큰 화면
         - **실시간 카운트다운**: 1초마다 자동 업데이트
-        - **향상된 UI**: 깔끔한 흰색 배경과 파스텔 색상
+        - **향상된 레이아웃**: 공간 효율적인 가로 배치
         """)
 
 # 푸터
@@ -720,7 +549,7 @@ st.markdown("---")
 st.markdown(
     """
     <div style='text-align: center; color: #8B5CF6; font-size: 0.9em; background: linear-gradient(135deg, #F3E8FF 0%, #E0E7FF 100%); padding: 1rem; border-radius: 15px; margin-top: 2rem; border: 1px solid #E0E7FF;'>
-        🌸 수업 타이머 & 활동 관리 도구 v2.0 | 
+        🌸 수업 타이머 & 활동 관리 도구 v3.0 | 
         교육 현장을 위한 파스텔 감성 시간 관리 솔루션 ✨
     </div>
     """, 

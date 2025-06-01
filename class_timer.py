@@ -128,13 +128,52 @@ st.markdown("""
         box-shadow: 0 4px 12px rgba(226, 232, 240, 0.4);
     }
     
-    /* 입력 필드 */
+    /* 입력 필드 스타일 개선 */
     .stTextInput > div > div > input,
     .stNumberInput > div > div > input,
     .stSelectbox > div > div > select {
-        border-radius: 10px;
+        border-radius: 15px;
         border: 2px solid #E2E8F0;
         background: white;
+        padding: 0.75rem 1rem;
+        font-size: 1.1rem;
+        color: #4A5568;
+        box-shadow: 0 2px 8px rgba(226, 232, 240, 0.3);
+        transition: all 0.3s ease;
+    }
+    
+    .stTextInput > div > div > input:focus,
+    .stNumberInput > div > div > input:focus,
+    .stSelectbox > div > div > select:focus {
+        border-color: #667eea;
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+        outline: none;
+    }
+    
+    /* 입력 필드 라벨 스타일 */
+    .stTextInput > label,
+    .stNumberInput > label,
+    .stSelectbox > label {
+        font-size: 1rem;
+        font-weight: 600;
+        color: #4A5568;
+        margin-bottom: 0.5rem;
+    }
+    
+    /* number input 버튼 스타일 */
+    .stNumberInput > div > div > button {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        color: white;
+        border-radius: 8px;
+        padding: 0.5rem;
+        margin: 2px;
+        transition: all 0.3s ease;
+    }
+    
+    .stNumberInput > div > div > button:hover {
+        transform: scale(1.1);
+        box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
     }
     
     /* 데이터프레임 */
@@ -402,9 +441,36 @@ with settings_col:
     if timer_mode == "단일 타이머":
         st.session_state.timer_type = "single"
         
-        minutes = st.number_input("분", min_value=0, max_value=120, value=10)
-        seconds = st.number_input("초", min_value=0, max_value=59, value=0)
-        activity_name = st.text_input("활동명", value="수업 활동")
+        st.markdown("#### ⏰ 시간 설정")
+        
+        # 시간 입력을 더 깔끔하게
+        time_col1, time_col2 = st.columns(2)
+        
+        with time_col1:
+            minutes = st.number_input(
+                "분", 
+                min_value=0, 
+                max_value=120, 
+                value=10,
+                help="분 단위로 입력하세요"
+            )
+        
+        with time_col2:
+            seconds = st.number_input(
+                "초", 
+                min_value=0, 
+                max_value=59, 
+                value=0,
+                help="초 단위로 입력하세요"
+            )
+        
+        st.markdown("#### 📝 활동 정보")
+        activity_name = st.text_input(
+            "활동명", 
+            value="수업 활동",
+            placeholder="활동명을 입력하세요",
+            help="진행할 활동의 이름을 입력하세요"
+        )
         
         if st.button("✅ 단일 타이머 설정", use_container_width=True):
             total_seconds = minutes * 60 + seconds

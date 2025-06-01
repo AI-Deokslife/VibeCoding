@@ -313,6 +313,55 @@ st.markdown("---")
 
 # 전체화면 모드 체크
 if st.session_state.fullscreen_mode:
+    # 전체화면용 CSS 추가
+    st.markdown("""
+    <style>
+        .fullscreen-container {
+            text-align: center;
+            padding: 3rem 0;
+        }
+        .fullscreen-title {
+            font-size: 3rem;
+            font-weight: bold;
+            margin: 2rem 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .fullscreen-timer-big {
+            font-size: 8rem;
+            font-weight: bold;
+            text-align: center;
+            padding: 3rem;
+            border-radius: 30px;
+            margin: 2rem auto;
+            box-shadow: 0 20px 40px rgba(149, 157, 165, 0.3);
+            border: 3px solid #E8F4FD;
+            color: #4A5568;
+            max-width: 600px;
+        }
+        .fullscreen-info {
+            font-size: 2rem;
+            color: #6B7280;
+            margin: 2rem 0;
+        }
+    </style>
+    """, unsafe_allow_html=True)
+    
+    # 사이드바 숨기기
+    st.markdown("""
+    <style>
+        .css-1d391kg {
+            display: none;
+        }
+        .main .block-container {
+            padding-top: 1rem;
+            max-width: 100%;
+        }
+    </style>
+    """, unsafe_allow_html=True)
+    
     # 전체화면 모드 렌더링
     remaining_time = st.session_state.current_time
     total_time = st.session_state.total_time
@@ -321,32 +370,85 @@ if st.session_state.fullscreen_mode:
     # 진행률 계산
     progress = max(0, min(1.0, (total_time - remaining_time) / total_time)) if total_time > 0 else 0
     
+    # 전체화면 레이아웃
+    st.markdown('<div class="fullscreen-container">', unsafe_allow_html=True)
+    
+    # 활동명 (큰 제목)
     st.markdown(f"""
-    <div class="fullscreen-timer">
-        <div class="fullscreen-activity-name">
-            📚 {st.session_state.current_activity if st.session_state.current_activity else "수업 활동"}
-        </div>
-        
-        <div class="fullscreen-timer-display" style="background: {timer_color};">
-            {format_time(remaining_time)}
-        </div>
-        
-        <div style="width: 600px; height: 20px; background: #E5E7EB; border-radius: 10px; margin: 1rem 0;">
-            <div style="width: {progress * 100}%; height: 100%; background: linear-gradient(90deg, #667eea 0%, #764ba2 100%); border-radius: 10px; transition: width 0.5s ease;"></div>
-        </div>
-        
-        <div style="text-align: center; font-size: 1.5rem; color: #6B7280; margin: 1rem 0;">
-            진행률: {progress * 100:.1f}% | 남은 시간: {format_time(remaining_time)}
-        </div>
+    <div class="fullscreen-title">
+        📚 {st.session_state.current_activity if st.session_state.current_activity else "수업 활동"}
     </div>
     """, unsafe_allow_html=True)
     
-    # 전체화면 종료 버튼
-    col1, col2, col3 = st.columns([1, 1, 1])
+    # 대형 타이머 (스트림릿 네이티브 방식)
+    st.markdown(f"""
+    <div class="fullscreen-timer-big" style="background: {timer_color};">
+        {format_time(remaining_time)}
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # 진행률 바 (스트림릿 네이티브)
+    if total_time > 0:
+        st.progress(progress)
+    
+    # 정보 표시
+    st.markdown(f"""
+    <div class="fullscreen-info">
+        진행률: {progress * 100:.1f}% | 남은 시간: {format_time(remaining_time)} | 전체 시간: {format_time(total_time)}
+    </div>
+    """, unsafe_allow_html=True)
+    
+    st.markdown('</div>', unsafe_allow_html=True)
+    
+    # 컨트롤 버튼들 (전체화면용)
+    st.markdown("---")
+    col1, col2, col3, col4, col5 = st.columns([1, 1, 1, 1, 1])
+    
+    with col1:
+        if not st.session_state.timer_running:
+            if st.button("▶️ 시작", key="fullscreen_start", use_container_width=True):
+                start_timer()
+                st.rerun()
+        else:
+            if st.button("⏸️ 일시정지", key="fullscreen_pause", use_container_width=True):
+                stop_timer()
+                st.rerun()
+    
     with col2:
-        if st.button("🔙 일반 화면으로 돌아가기", key="exit_fullscreen", use_container_width=True):
+        if st.button("🔄 리셋", key="fullscreen_reset", use_container_width=True):
+            reset_timer()
+            st.rerun()
+    
+    with col3:
+        if st.session_state.timer_type == "multi" and len(st.session_state.activities) > 1:
+            if st.button("⏭️ 다음 활동", key="fullscreen_next", use_container_width=True):
+                next_activity()
+                st.rerun()
+    
+    with col4:
+        if st.button("🔙 일반 화면", key="exit_fullscreen", use_container_width=True):
             st.session_state.fullscreen_mode = False
             st.rerun()
+    
+    with col5:
+        if st.button("🔄 새로고침", key="fullscreen_refresh", use_container_width=True):
+            st.rerun()
+    
+    # 활동 정보 (전체화면용)
+    if st.session_state.timer_type == "multi" and st.session_state.activities:
+        st.markdown("---")
+        col1, col2, col3 = st.columns(3)
+        
+        total_activities = len(st.session_state.activities)
+        current_index = st.session_state.activity_index + 1
+        remaining_activities = total_activities - current_index
+        
+        with col1:
+            st.metric("전체 활동", f"{total_activities}개", delta=None)
+        with col2:
+            st.metric("현재 활동", f"{current_index}번째", delta=None)
+        with col3:
+            st.metric("남은 활동", f"{remaining_activities}개", delta=None)
 
 else:
     # 사이드바 - 설정 패널

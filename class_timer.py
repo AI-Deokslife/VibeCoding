@@ -12,13 +12,38 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# 스트림릿 기본 UI 숨기기
+# 스트림릿 기본 UI 완전히 숨기기
 st.markdown("""
 <style>
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-    header {visibility: hidden;}
-    .stDeployButton {visibility: hidden;}
+    /* 모든 스트림릿 기본 요소 숨기기 */
+    #MainMenu {visibility: hidden !important;}
+    footer {visibility: hidden !important;}
+    header {visibility: hidden !important;}
+    .stDeployButton {visibility: hidden !important;}
+    .stDecoration {visibility: hidden !important;}
+    .stToolbar {visibility: hidden !important;}
+    
+    /* 상단 빈 공간 제거 */
+    .main > div:first-child {
+        padding-top: 0 !important;
+    }
+    
+    /* 헤더 영역 완전 제거 */
+    .stApp > header {
+        height: 0 !important;
+        visibility: hidden !important;
+    }
+    
+    .stApp > div:first-child {
+        height: 0 !important;
+        visibility: hidden !important;
+    }
+    
+    /* 불필요한 여백 제거 */
+    .block-container {
+        padding-top: 1rem !important;
+        padding-bottom: 1rem !important;
+    }
     
     /* 전체 앱 스타일 */
     .main .block-container {
@@ -40,6 +65,17 @@ st.markdown("""
         text-align: center;
         box-shadow: 0 3px 10px rgba(226, 232, 240, 0.3);
         border-left: 4px solid #667eea;
+    }
+    
+    /* 섹션 제목 스타일 */
+    .settings-panel h4,
+    .control-panel h4 {
+        color: #4A5568;
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin: 1.5rem 0 1rem 0;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid #E2E8F0;
     }
     
     /* 설정 패널 스타일 개선 */
@@ -691,7 +727,13 @@ with timer_col:
 # 3. 컨트롤 패널 (오른쪽)
 with control_col:
     st.markdown('<div class="control-panel">', unsafe_allow_html=True)
-    st.markdown("### 조작")
+    
+    # 패널 제목
+    st.markdown("""
+    <div class="panel-title">
+        🎮 조작
+    </div>
+    """, unsafe_allow_html=True)
     
     # 시작/정지
     if not st.session_state.timer_running:
@@ -713,7 +755,11 @@ with control_col:
     # 활동 현황
     if st.session_state.timer_type == "multi" and st.session_state.activities:
         st.markdown("---")
-        st.markdown("### 📊 현황")
+        st.markdown("""
+        <div style='color: #4A5568; font-size: 1.1rem; font-weight: 600; margin: 1.5rem 0 1rem 0; padding-bottom: 0.5rem; border-bottom: 2px solid #E2E8F0;'>
+            📊 현황
+        </div>
+        """, unsafe_allow_html=True)
         
         total_activities = len(st.session_state.activities)
         current_index = st.session_state.activity_index + 1

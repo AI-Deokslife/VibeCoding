@@ -15,10 +15,10 @@ st.set_page_config(
 st.markdown("""
 <style>
     .main-timer {
-        font-size: 8rem !important;
+        font-size: 15rem !important;
         text-align: center;
         font-weight: bold;
-        padding: 2rem;
+        padding: 1rem;
         border-radius: 20px;
         margin: 1rem 0;
     }

@@ -15,12 +15,12 @@ st.set_page_config(
 st.markdown("""
 <style>
     .main-timer {
-        font-size: 8rem !important;
+        font-size: 14rem !important;
         text-align: center;
         font-weight: bold;
         padding: 2rem;
         border-radius: 20px;
-        margin: 1rem 0;
+        margin: 0.5rem 0;
     }
     
     .activity-name {

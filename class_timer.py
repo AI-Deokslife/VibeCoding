@@ -921,6 +921,19 @@ def render_tutorial():
         </div>
         """, unsafe_allow_html=True)
         
+        st.markdown("""
+        <div class="tip-box">
+            <h4>⏰ 정확한 시간 계산 방식</h4>
+            <ul>
+                <li><strong>🎯 로컬 시계 기준:</strong> 컴퓨터의 실제 시간을 기준으로 계산 (약간의 오차가 있을 수 있습니다)</li>
+                <li><strong>📱 네트워크 독립:</strong> 인터넷 속도와 관계없이 정확한 타이밍 (약간의 오차가 있을 수 있습니다)</li>
+                <li><strong>🎈 확실한 완료:</strong> 타이머 종료 시 풍선이 공중으로 떠오릅니다</li>
+                <li><strong>⏸️ 정확한 일시정지:</strong> 일시정지 후 재시작해도 정확한 시간 유지</li>
+                <li><strong>🔄 자동/수동 모드:</strong> 구간 타이머와 포모도로에서 자동 진행 선택 가능</li>
+            </ul>
+        </div>
+        """, unsafe_allow_html=True)
+        
         if st.button("✅ 튜토리얼 닫기", key="close_tutorial"):
             st.session_state.show_tutorial = False
             st.rerun()
@@ -931,9 +944,9 @@ def render_performance_info():
     <div class="tip-box">
         <h4>⏰ 정확한 시간 계산 방식</h4>
         <ul>
-            <li><strong>🎯 로컬 시계 기준:</strong> 컴퓨터의 실제 시간을 기준으로 계산 (약간의 오차가 있을 수 있습니다)</li>
-            <li><strong>📱 네트워크 독립:</strong> 인터넷 속도와 관계없이 정확한 타이밍 (약간의 오차가 있을 수 있습니다)</li>
-            <li><strong>🎈 확실한 완료:</strong> 타이머 종료 시 풍선이 공중으로 떠오릅니다</li>
+            <li><strong>🎯 로컬 시계 기준:</strong> 컴퓨터의 실제 시간을 기준으로 계산</li>
+            <li><strong>📱 네트워크 독립:</strong> 인터넷 속도와 관계없이 정확한 타이밍</li>
+            <li><strong>🎈 확실한 완료:</strong> 타이머 종료 시 풍선 + 메시지</li>
             <li><strong>⏸️ 정확한 일시정지:</strong> 일시정지 후 재시작해도 정확한 시간 유지</li>
             <li><strong>🔄 자동/수동 모드:</strong> 구간 타이머와 포모도로에서 자동 진행 선택 가능</li>
         </ul>

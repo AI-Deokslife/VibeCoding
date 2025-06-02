@@ -148,6 +148,10 @@ def init_session_state():
     # 완료 상태 관리
     if 'just_completed' not in st.session_state:
         st.session_state.just_completed = False
+    
+    # 자동/수동 진행 모드
+    if 'auto_mode' not in st.session_state:
+        st.session_state.auto_mode = False  # 기본값: 수동 모드
 
 # 사전 정의된 템플릿
 def get_templates():
@@ -293,6 +297,22 @@ def render_sidebar():
 def render_segment_timer_settings():
     st.sidebar.markdown("### 구간 타이머 설정")
     
+    # 자동/수동 진행 모드 선택
+    st.sidebar.markdown("#### 🔄 진행 모드")
+    auto_mode = st.sidebar.radio(
+        "진행 방식 선택",
+        ["수동 진행", "자동 진행"],
+        index=1 if st.session_state.auto_mode else 0,
+        key="segment_auto_mode",
+        help="자동: 활동 완료 시 자동으로 다음 활동 시작 | 수동: 완료 후 정지, 직접 시작"
+    )
+    st.session_state.auto_mode = (auto_mode == "자동 진행")
+    
+    if st.session_state.auto_mode:
+        st.sidebar.success("🤖 자동 모드: 활동 완료 시 자동으로 다음 활동이 시작됩니다")
+    else:
+        st.sidebar.info("👤 수동 모드: 활동 완료 후 직접 시작 버튼을 눌러주세요")
+    
     templates = get_templates()
     template_choice = st.sidebar.selectbox(
         "템플릿 선택",
@@ -372,6 +392,22 @@ def render_countdown_settings():
 def render_pomodoro_settings():
     st.sidebar.markdown("### 포모도로 설정")
     st.sidebar.info("기본: 25분 집중 + 5분 휴식 사이클")
+    
+    # 자동/수동 진행 모드 선택
+    st.sidebar.markdown("#### 🔄 진행 모드")
+    auto_mode = st.sidebar.radio(
+        "진행 방식 선택",
+        ["수동 진행", "자동 진행"],
+        index=1 if st.session_state.auto_mode else 0,
+        key="pomodoro_auto_mode",
+        help="자동: 세션 완료 시 자동으로 다음 세션 시작 | 수동: 완료 후 정지, 직접 시작"
+    )
+    st.session_state.auto_mode = (auto_mode == "자동 진행")
+    
+    if st.session_state.auto_mode:
+        st.sidebar.success("🤖 자동 모드: 세션 완료 시 자동으로 다음 세션이 시작됩니다")
+    else:
+        st.sidebar.info("👤 수동 모드: 세션 완료 후 직접 시작 버튼을 눌러주세요")
     
     work_time = st.sidebar.number_input("집중 시간 (분)", min_value=1, value=st.session_state.pomodoro_work_time // 60, key="pomodoro_work_time_input")
     break_time = st.sidebar.number_input("휴식 시간 (분)", min_value=1, value=st.session_state.pomodoro_break_time // 60, key="pomodoro_break_time_input")
@@ -529,8 +565,14 @@ def render_segment_timer():
                 st.info("🔔 타이머가 종료되었습니다!")
                 
                 if st.session_state.current_activity_index < len(st.session_state.activities) - 1:
-                    st.warning("➡️ 다음 활동으로 이동합니다!")
-                    next_activity(auto_start_next=False)
+                    if st.session_state.auto_mode:
+                        # 자동 모드: 자동으로 다음 활동 시작
+                        st.warning("🤖 자동 모드: 다음 활동을 자동으로 시작합니다!")
+                        next_activity(auto_start_next=True)
+                    else:
+                        # 수동 모드: 다음 활동으로 이동하지만 시작하지 않음
+                        st.warning("👤 수동 모드: 다음 활동으로 이동했습니다. 시작 버튼을 눌러주세요!")
+                        next_activity(auto_start_next=False)
                 else:
                     st.error("🏁 모든 활동이 완료되었습니다!")
                 
@@ -678,7 +720,7 @@ def render_pomodoro_timer():
     with col2:
         if st.button("⏭️ 다음 세션", key="pomodoro_next_session"):
             stop_accurate_timer()
-            next_pomodoro_session()
+            next_pomodoro_session(auto_start=False)  # 수동 클릭은 항상 정지 상태
             st.rerun()
     
     with col3:
@@ -703,12 +745,18 @@ def render_pomodoro_timer():
                 st.balloons()  # 풍선 효과
                 if is_work_time:
                     st.success("🎉✨ 집중 시간 완료! ✨🎉")
-                    st.info("☕ 이제 휴식을 취하세요!")
+                    if st.session_state.auto_mode:
+                        st.info("🤖 자동 모드: 휴식 시간을 자동으로 시작합니다!")
+                    else:
+                        st.info("👤 수동 모드: 휴식을 위해 시작 버튼을 눌러주세요!")
                 else:
                     st.success("🎉✨ 휴식 시간 완료! ✨🎉")  
-                    st.info("🍅 다시 집중해봅시다!")
+                    if st.session_state.auto_mode:
+                        st.info("🤖 자동 모드: 집중 시간을 자동으로 시작합니다!")
+                    else:
+                        st.info("👤 수동 모드: 집중을 위해 시작 버튼을 눌러주세요!")
                 
-                next_pomodoro_session()
+                next_pomodoro_session(auto_start=st.session_state.auto_mode)
                 
                 # 풍선이 보일 시간 확보
                 time.sleep(2)
@@ -848,7 +896,7 @@ def reset_all_activities():
         st.session_state.remaining_time = 0
     st.rerun()
 
-def next_pomodoro_session():
+def next_pomodoro_session(auto_start=False):
     stop_accurate_timer()
     st.session_state.pomodoro_cycle += 1
     is_next_work_time = st.session_state.pomodoro_cycle % 2 == 0 
@@ -857,6 +905,10 @@ def next_pomodoro_session():
         st.session_state.remaining_time = st.session_state.pomodoro_work_time
     else:
         st.session_state.remaining_time = st.session_state.pomodoro_break_time
+    
+    # 자동 모드인 경우 바로 시작
+    if auto_start:
+        start_accurate_timer(st.session_state.remaining_time)
 
 def render_tutorial():
     """처음 사용자를 위한 튜토리얼"""
@@ -865,7 +917,7 @@ def render_tutorial():
         <div class="quick-start-box">
             <h3>🚀 정확한 로컬 시계 기반 타이머!</h3>
             <p><strong>실제 시간을 기준으로 정확하게 작동하는 타이머입니다!</strong></p>
-            <p>🎈 <strong>풍선 효과:</strong> 타이머 완료 시 화면 전체에서 색깔 풍선들이 아래에서 위로 올라갑니다!</p>
+            <p>🎈 타이머 완료 시 화면 전체에 풍선 효과가 나타납니다!</p>
         </div>
         """, unsafe_allow_html=True)
         
@@ -883,23 +935,10 @@ def render_performance_info():
             <li><strong>📱 네트워크 독립:</strong> 인터넷 속도와 관계없이 정확한 타이밍</li>
             <li><strong>🎈 확실한 완료:</strong> 타이머 종료 시 풍선 + 메시지</li>
             <li><strong>⏸️ 정확한 일시정지:</strong> 일시정지 후 재시작해도 정확한 시간 유지</li>
+            <li><strong>🔄 자동/수동 모드:</strong> 구간 타이머와 포모도로에서 자동 진행 선택 가능</li>
         </ul>
     </div>
     """, unsafe_allow_html=True)
-    
-    # 풍선 테스트 버튼 추가
-    st.markdown("### 🎈 풍선 효과 테스트")
-    if st.button("🎈 풍선 테스트 (즉시 실행)", key="balloon_test"):
-        st.balloons()
-        st.success("🎉 풍선이 보이셨나요? 위쪽을 확인해보세요!")
-        st.info("💡 풍선이 안 보인다면 브라우저 애니메이션 설정을 확인해보세요.")
-    
-    if st.button("🎈 풍선 테스트 (2초 후)", key="balloon_test_delayed"):
-        with st.spinner("풍선 준비 중..."):
-            time.sleep(2)
-        st.balloons()
-        st.success("🎉 이번엔 풍선이 보이셨나요?")
-        st.info("💡 풍선은 화면 전체에서 아래에서 위로 올라가야 합니다.")
 
 # 메인 애플리케이션
 def main():
@@ -936,15 +975,15 @@ def main():
         - 네트워크 지연과 관계없이 정확한 타이밍
         - 일시정지 후 재시작해도 정확한 시간 유지
         
-        **🎈 완료 알림 개선**
-        - 타이머 완료 시 화면 전체에 풍선 효과 (2초간 표시)
+        **🎈 완료 알림**
+        - 타이머 완료 시 화면 전체에 풍선 효과
         - 다양한 색상의 성공 메시지
         - 깜빡임 제거로 깔끔한 완료 표시
         
-        **💡 풍선 안 보이는 경우**
-        - 위의 '풍선 테스트' 버튼으로 확인해보세요
-        - 브라우저 애니메이션 설정 확인
-        - 다른 브라우저로 테스트 권장
+        **🔄 자동/수동 진행 모드 (구간 타이머 & 포모도로)**
+        - **자동 모드 🤖**: 타이머 완료 시 자동으로 다음 단계 시작
+        - **수동 모드 👤**: 타이머 완료 후 정지, 직접 시작 버튼 클릭 필요
+        - 사이드바에서 진행 방식 선택 가능
         """)
 
 if __name__ == "__main__":

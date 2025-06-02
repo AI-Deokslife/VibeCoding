@@ -873,7 +873,7 @@ def render_stopwatch():
         with st.expander("📊 최근 측정 기록"):
             for i, record in enumerate(reversed(st.session_state.stopwatch_records[-10:])):
                 achieved_icon = "✅" if record.get('target_achieved', False) else ("❌" if target_time else "")
-                st.text(f"{achieved_icon} {record['purpose']}: {format_time(record['time'])})
+                st.text(f"{achieved_icon} {record['purpose']}: {format_time(record['time'])({record['timestamp']}.strftime('%H:%M'))")})
 
     # 스톱워치 자동 업데이트
     if st.session_state.timer_running:

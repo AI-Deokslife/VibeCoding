@@ -938,21 +938,6 @@ def render_tutorial():
             st.session_state.show_tutorial = False
             st.rerun()
 
-def render_performance_info():
-    """성능 정보"""
-    st.markdown("""
-    <div class="tip-box">
-        <h4>⏰ 정확한 시간 계산 방식</h4>
-        <ul>
-            <li><strong>🎯 로컬 시계 기준:</strong> 컴퓨터의 실제 시간을 기준으로 계산</li>
-            <li><strong>📱 네트워크 독립:</strong> 인터넷 속도와 관계없이 정확한 타이밍</li>
-            <li><strong>🎈 확실한 완료:</strong> 타이머 종료 시 풍선 + 메시지</li>
-            <li><strong>⏸️ 정확한 일시정지:</strong> 일시정지 후 재시작해도 정확한 시간 유지</li>
-            <li><strong>🔄 자동/수동 모드:</strong> 구간 타이머와 포모도로에서 자동 진행 선택 가능</li>
-        </ul>
-    </div>
-    """, unsafe_allow_html=True)
-
 # 메인 애플리케이션
 def main():
     init_session_state()
@@ -964,29 +949,21 @@ def main():
     # 튜토리얼 표시
     render_tutorial()
     
-    # 성능 정보
-    render_performance_info()
-    
     render_sidebar()
     render_main_timer()
     
     st.markdown("---")
     
     # 사용법
-    with st.expander("📖 사용법"):
+    with st.expander("📖 상세 사용법"):
         st.markdown("""
-        ### ⏰ 정확한 로컬 시계 기반 타이머
+        ### 🎯 타이머 모드별 사용법
         
-        **✅ 작동 확인됨**
+        **✅ 4가지 타이머 모드**
         - **기본 카운트다운**: 설정 시간부터 정확한 역순 카운트  
         - **구간 타이머**: 활동별 시간 관리
         - **포모도로**: 집중/휴식 사이클 관리
         - **스톱워치**: 시간 측정 및 기록
-        
-        **⏰ 정확한 시간 계산 특징**
-        - 컴퓨터의 실제 시계를 기준으로 계산
-        - 네트워크 지연과 관계없이 정확한 타이밍
-        - 일시정지 후 재시작해도 정확한 시간 유지
         
         **🎈 완료 알림**
         - 타이머 완료 시 화면 전체에 풍선 효과

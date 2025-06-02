@@ -15,10 +15,10 @@ st.set_page_config(
 st.markdown("""
 <style>
     .main-timer {
-        font-size: 15rem !important;
+        font-size: 8rem !important;
         text-align: center;
         font-weight: bold;
-        padding: 1rem;
+        padding: 2rem;
         border-radius: 20px;
         margin: 1rem 0;
     }
@@ -425,13 +425,45 @@ def render_pomodoro_settings():
 def render_stopwatch_settings():
     st.sidebar.markdown("### 스톱워치 설정")
     
-    measurement_purpose = st.sidebar.selectbox(
-        "측정 목적",
-        ["자유 측정", "학생 발표 시간", "문제 풀이 시간", "실험 관찰 시간", "토론 발언 시간", "독서 시간", "창작 활동 시간"],
-        index=["자유 측정", "학생 발표 시간", "문제 풀이 시간", "실험 관찰 시간", "토론 발언 시간", "독서 시간", "창작 활동 시간"].index(st.session_state.measurement_purpose)
+    # 측정 목적 직접 입력
+    st.sidebar.markdown("#### 📝 측정 목적")
+    measurement_purpose = st.sidebar.text_input(
+        "측정 목적 입력",
+        value=st.session_state.measurement_purpose,
+        placeholder="예: 학생 발표 시간, 문제 풀이 시간, 실험 관찰 등...",
+        key="measurement_purpose_input",
+        help="측정하고자 하는 활동을 자유롭게 입력하세요"
     )
     
-    st.session_state.measurement_purpose = measurement_purpose
+    # 입력값이 있으면 업데이트, 없으면 기본값 유지
+    if measurement_purpose.strip():
+        st.session_state.measurement_purpose = measurement_purpose.strip()
+    
+    # 자주 사용하는 예시 제공
+    st.sidebar.markdown("**💡 예시:**")
+    example_buttons_col1, example_buttons_col2 = st.sidebar.columns(2)
+    
+    with example_buttons_col1:
+        if st.button("🎤 발표", key="example_presentation"):
+            st.session_state.measurement_purpose = "학생 발표 시간"
+            st.rerun()
+        if st.button("📝 문제풀이", key="example_problem"):
+            st.session_state.measurement_purpose = "문제 풀이 시간"
+            st.rerun()
+        if st.button("📚 독서", key="example_reading"):
+            st.session_state.measurement_purpose = "독서 시간"
+            st.rerun()
+    
+    with example_buttons_col2:
+        if st.button("🔬 실험", key="example_experiment"):
+            st.session_state.measurement_purpose = "실험 관찰 시간"
+            st.rerun()
+        if st.button("💬 토론", key="example_discussion"):
+            st.session_state.measurement_purpose = "토론 발언 시간"
+            st.rerun()
+        if st.button("✨ 창작", key="example_creative"):
+            st.session_state.measurement_purpose = "창작 활동 시간"
+            st.rerun()
     
     if st.session_state.stopwatch_records:
         st.sidebar.markdown("### 📊 측정 기록 (최근 5개)")
@@ -874,6 +906,7 @@ def render_stopwatch():
             for i, record in enumerate(reversed(st.session_state.stopwatch_records[-10:])):
                 achieved_icon = "✅" if record.get('target_achieved', False) else ("❌" if target_time else "")
                 st.text(f"{achieved_icon} {record['purpose']}: {format_time(record['time'])} ({record['timestamp'].strftime('%H:%M')})")
+
     # 스톱워치 자동 업데이트
     if st.session_state.timer_running:
         time.sleep(0.1)

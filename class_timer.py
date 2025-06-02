@@ -12,14 +12,14 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# CSS 스타일 및 JavaScript 타이머 추가
+# CSS 스타일 추가
 st.markdown("""
 <style>
     .main-timer {
         font-size: 8rem !important;
         text-align: center;
         font-weight: bold;
-        padding: 1rem;
+        padding: 2rem;
         border-radius: 20px;
         margin: 1rem 0;
     }
@@ -104,134 +104,6 @@ st.markdown("""
         margin: 1rem 0;
     }
 </style>
-
-<script>
-class StreamlitTimer {
-    constructor() {
-        this.interval = null;
-        this.isRunning = false;
-        this.remainingTime = 0;
-        this.totalTime = 0;
-        this.onComplete = null;
-        this.onUpdate = null;
-    }
-    
-    start(remainingSeconds, totalSeconds = null, onUpdate = null, onComplete = null) {
-        this.stop(); // 이전 타이머 정리
-        this.remainingTime = remainingSeconds;
-        this.totalTime = totalSeconds || remainingSeconds;
-        this.onUpdate = onUpdate;
-        this.onComplete = onComplete;
-        this.isRunning = true;
-        
-        this.interval = setInterval(() => {
-            if (this.remainingTime > 0) {
-                this.remainingTime--;
-                if (this.onUpdate) {
-                    this.onUpdate(this.remainingTime, this.totalTime);
-                }
-            } else {
-                this.stop();
-                if (this.onComplete) {
-                    this.onComplete();
-                }
-            }
-        }, 1000);
-        
-        // 즉시 한 번 업데이트
-        if (this.onUpdate) {
-            this.onUpdate(this.remainingTime, this.totalTime);
-        }
-    }
-    
-    stop() {
-        if (this.interval) {
-            clearInterval(this.interval);
-            this.interval = null;
-        }
-        this.isRunning = false;
-    }
-    
-    pause() {
-        this.stop();
-    }
-    
-    getRemainingTime() {
-        return this.remainingTime;
-    }
-    
-    setRemainingTime(seconds) {
-        this.remainingTime = seconds;
-        if (this.onUpdate) {
-            this.onUpdate(this.remainingTime, this.totalTime);
-        }
-    }
-}
-
-// 전역 타이머 인스턴스
-window.streamlitTimer = new StreamlitTimer();
-
-// 시간 포맷팅 함수
-function formatTime(seconds) {
-    if (seconds < 0) return "00:00";
-    
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    const secs = seconds % 60;
-    
-    if (hours > 0) {
-        return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-    } else {
-        return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-    }
-}
-
-// 색상 클래스 결정
-function getTimeColorClass(remaining, total) {
-    if (total === 0) {
-        return remaining <= 0 ? "finished" : "time-green";
-    }
-    
-    if (remaining <= 0) {
-        return "finished";
-    }
-    
-    const ratio = remaining / total;
-    if (ratio > 0.5) return "time-green";
-    if (ratio > 0.2) return "time-yellow";
-    return "time-red";
-}
-
-// 타이머 표시 업데이트
-function updateTimerDisplay(remaining, total, elementId = 'timer-display') {
-    const element = document.getElementById(elementId);
-    if (element) {
-        const colorClass = getTimeColorClass(remaining, total);
-        element.className = `main-timer ${colorClass}`;
-        element.innerHTML = formatTime(remaining);
-        
-        // 완료 시 풍선 효과 (Streamlit의 balloons 대신 간단한 효과)
-        if (remaining <= 0 && !window.balloonsShown) {
-            window.balloonsShown = true;
-            element.style.animation = 'blink 0.5s 3';
-            
-            // Streamlit에 완료 알림
-            if (window.Streamlit) {
-                window.Streamlit.setComponentValue('timer_completed');
-            }
-        }
-    }
-}
-
-// 진행률 업데이트
-function updateProgress(remaining, total, elementId = 'progress-bar') {
-    const element = document.getElementById(elementId);
-    if (element && total > 0) {
-        const progress = Math.max(0, (total - remaining) / total);
-        element.style.width = `${progress * 100}%`;
-    }
-}
-</script>
 """, unsafe_allow_html=True)
 
 # 세션 상태 초기화
@@ -254,9 +126,15 @@ def init_session_state():
     if 'total_elapsed_time' not in st.session_state:
         st.session_state.total_elapsed_time = 0
     
+    if 'activity_start_time' not in st.session_state:
+        st.session_state.activity_start_time = None
+    
     if 'pomodoro_cycle' not in st.session_state:
         st.session_state.pomodoro_cycle = 0
     
+    if 'stopwatch_start_time' not in st.session_state:
+        st.session_state.stopwatch_start_time = None
+
     if 'initial_countdown_time' not in st.session_state:
         st.session_state.initial_countdown_time = 0
     
@@ -278,8 +156,15 @@ def init_session_state():
     if 'show_tutorial' not in st.session_state:
         st.session_state.show_tutorial = True
 
-    if 'js_timer_active' not in st.session_state:
-        st.session_state.js_timer_active = False
+    # 타이머 최적화를 위한 상태
+    if 'last_update_time' not in st.session_state:
+        st.session_state.last_update_time = time.time()
+    
+    if 'timer_completed' not in st.session_state:
+        st.session_state.timer_completed = False
+    
+    if 'completion_shown' not in st.session_state:
+        st.session_state.completion_shown = False
 
 # 사전 정의된 템플릿
 def get_templates():
@@ -325,7 +210,7 @@ def get_templates():
         ]
     }
 
-# 시간 포맷팅 함수 (Python 백업용)
+# 시간 포맷팅 함수
 def format_time(seconds):
     if seconds < 0:
         return "00:00"
@@ -339,43 +224,47 @@ def format_time(seconds):
     else:
         return f"{minutes:02d}:{secs:02d}"
 
-# JavaScript 타이머 시작
-def start_js_timer(remaining_seconds, total_seconds=None, timer_id='timer-display'):
-    total_seconds = total_seconds or remaining_seconds
-    st.session_state.js_timer_active = True
-    st.session_state.timer_running = True
-    
-    st.markdown(f"""
-    <script>
-    window.balloonsShown = false;
-    window.streamlitTimer.start(
-        {remaining_seconds}, 
-        {total_seconds},
-        function(remaining, total) {{
-            updateTimerDisplay(remaining, total, '{timer_id}');
-            updateProgress(remaining, total, 'progress-bar');
-        }},
-        function() {{
-            // 완료 시 Streamlit에 알림
-            setTimeout(function() {{
-                window.location.reload();
-            }}, 2000);
-        }}
-    );
-    </script>
-    """, unsafe_allow_html=True)
+# 시간에 따른 색상 클래스 결정
+def get_time_color_class(remaining_time, total_time):    
+    if total_time == 0:
+        return "time-green" if remaining_time > 0 else "finished"
 
-# JavaScript 타이머 정지
-def stop_js_timer():
-    st.session_state.js_timer_active = False
-    st.session_state.timer_running = False
+    if remaining_time <= 0:
+        return "finished"
     
-    st.markdown("""
-    <script>
-    window.streamlitTimer.stop();
-    window.balloonsShown = false;
-    </script>
-    """, unsafe_allow_html=True)
+    ratio = remaining_time / total_time
+    if ratio > 0.5:
+        return "time-green"
+    elif ratio > 0.2:
+        return "time-yellow"
+    else:
+        return "time-red"
+
+# 최적화된 타이머 업데이트
+def update_timer():
+    """타이머 시간을 업데이트하고 필요한 경우에만 rerun"""
+    if not st.session_state.timer_running:
+        return False
+    
+    current_time = time.time()
+    elapsed = current_time - st.session_state.last_update_time
+    
+    # 1초 이상 경과한 경우에만 업데이트
+    if elapsed >= 1.0:
+        seconds_to_subtract = int(elapsed)
+        st.session_state.remaining_time -= seconds_to_subtract
+        st.session_state.last_update_time = current_time
+        
+        # 타이머 완료 확인
+        if st.session_state.remaining_time <= 0:
+            st.session_state.timer_running = False
+            st.session_state.timer_completed = True
+            st.session_state.remaining_time = 0
+            return True  # 완료됨
+        
+        return True  # 업데이트됨
+    
+    return False  # 업데이트 불필요
 
 # 사이드바 설정
 def render_sidebar():
@@ -388,14 +277,17 @@ def render_sidebar():
     )
     
     if timer_mode != st.session_state.timer_mode:
-        stop_js_timer()
         st.session_state.timer_mode = timer_mode
+        st.session_state.timer_running = False
         st.session_state.remaining_time = 0
         st.session_state.current_activity_index = 0
         st.session_state.total_elapsed_time = 0
+        st.session_state.stopwatch_start_time = None
         st.session_state.pomodoro_cycle = 0
         st.session_state.initial_countdown_time = 0
         st.session_state.activities = []
+        st.session_state.timer_completed = False
+        st.session_state.completion_shown = False
         if timer_mode == "구간 타이머":
             templates = get_templates()
             st.session_state.activities = templates["커스텀"].copy()
@@ -423,9 +315,11 @@ def render_segment_timer_settings():
     
     if template_choice != "커스텀":
         if st.sidebar.button("템플릿 불러오기"):
-            stop_js_timer()
             st.session_state.activities = templates[template_choice].copy()
             st.session_state.current_activity_index = 0
+            st.session_state.timer_running = False
+            st.session_state.timer_completed = False
+            st.session_state.completion_shown = False
             if st.session_state.activities:
                 st.session_state.remaining_time = st.session_state.activities[0]['duration'] * 60
             else:
@@ -486,9 +380,11 @@ def render_countdown_settings():
     total_seconds = hours * 3600 + minutes * 60 + seconds
     
     if st.sidebar.button("시간 설정"):
-        stop_js_timer()
         st.session_state.remaining_time = total_seconds
         st.session_state.initial_countdown_time = total_seconds
+        st.session_state.timer_running = False
+        st.session_state.timer_completed = False
+        st.session_state.completion_shown = False
         st.rerun()
 
 def render_pomodoro_settings():
@@ -499,11 +395,13 @@ def render_pomodoro_settings():
     break_time = st.sidebar.number_input("휴식 시간 (분)", min_value=1, value=st.session_state.pomodoro_break_time // 60, key="pomodoro_break_time_input")
     
     if st.sidebar.button("포모도로 시작/설정"):
-        stop_js_timer()
         st.session_state.pomodoro_work_time = work_time * 60
         st.session_state.pomodoro_break_time = break_time * 60
         st.session_state.pomodoro_cycle = 0
         st.session_state.remaining_time = st.session_state.pomodoro_work_time
+        st.session_state.timer_running = False
+        st.session_state.timer_completed = False
+        st.session_state.completion_shown = False
         st.rerun()
 
 def render_stopwatch_settings():
@@ -555,10 +453,14 @@ def render_segment_timer():
     if not st.session_state.activities:
         st.error("활동을 추가해주세요!")
         st.session_state.remaining_time = 0
+        st.session_state.timer_running = False
         return
     
     if st.session_state.current_activity_index >= len(st.session_state.activities):
         st.session_state.current_activity_index = 0
+        if not st.session_state.activities:
+            st.error("활동을 추가해주세요!")
+            return
 
     current_activity = st.session_state.activities[st.session_state.current_activity_index]
     total_activities = len(st.session_state.activities)
@@ -582,48 +484,69 @@ def render_segment_timer():
     if st.session_state.remaining_time > total_time_for_current_activity and not st.session_state.timer_running:
         st.session_state.remaining_time = total_time_for_current_activity
 
-    # JavaScript 타이머 표시
-    st.markdown(f"""
-    <div id="timer-display" class="main-timer time-green">
+    color_class = get_time_color_class(st.session_state.remaining_time, total_time_for_current_activity)
+    
+    timer_placeholder = st.empty()
+    timer_placeholder.markdown(f"""
+    <div class="main-timer {color_class}">
         {format_time(st.session_state.remaining_time)}
     </div>
-    <div style="background-color: #e9ecef; border-radius: 10px; height: 20px; margin: 1rem 0;">
-        <div id="progress-bar" style="background-color: #007bff; height: 100%; border-radius: 10px; width: 0%; transition: width 0.3s ease;"></div>
-    </div>
     """, unsafe_allow_html=True)
+    
+    activity_progress = max(0, (total_time_for_current_activity - st.session_state.remaining_time) / total_time_for_current_activity) if total_time_for_current_activity > 0 else 0
+    st.progress(activity_progress)
     
     col1, col2, col3, col4, col5 = st.columns(5)
     
     with col1:
         if st.button("▶️ 시작" if not st.session_state.timer_running else "⏸️ 일시정지", key="segment_start_pause"):
             if not st.session_state.timer_running:
-                start_js_timer(st.session_state.remaining_time, total_time_for_current_activity)
+                st.session_state.timer_running = True
+                st.session_state.last_update_time = time.time()
+                st.session_state.timer_completed = False
+                st.session_state.completion_shown = False
             else:
-                stop_js_timer()
+                st.session_state.timer_running = False
             st.rerun()
     
     with col2:
         if st.button("⏹️ 정지", key="segment_stop"):
-            stop_js_timer()
+            st.session_state.timer_running = False
             st.session_state.remaining_time = current_activity['duration'] * 60
+            st.session_state.timer_completed = False
+            st.session_state.completion_shown = False
             st.rerun()
     
     with col3:
         if st.button("⏭️ 다음 활동", key="segment_next"):
-            stop_js_timer()
             next_activity()
             st.rerun()
     
     with col4:
         if st.button("⏮️ 이전 활동", key="segment_prev"):
-            stop_js_timer()
             prev_activity()
             st.rerun()
     
     with col5:
         if st.button("🔄 전체 초기화", key="segment_reset_all"):
-            stop_js_timer()
             reset_all_activities()
+    
+    # 타이머 업데이트 및 완료 처리
+    if st.session_state.timer_running:
+        update_result = update_timer()
+        if update_result:  # 업데이트 또는 완료됨
+            st.rerun()
+    
+    # 완료 처리
+    if st.session_state.timer_completed and not st.session_state.completion_shown:
+        st.balloons()
+        if st.session_state.current_activity_index < len(st.session_state.activities) - 1:
+            next_activity(auto_start_next=False)
+            st.success(f"'{current_activity['name']}' 활동 완료! 다음 활동으로 이동합니다.")
+        else:
+            st.success("🎉 모든 활동이 완료되었습니다!")
+        st.session_state.completion_shown = True
+        st.rerun()
 
 def render_countdown_timer():
     st.markdown("""
@@ -635,15 +558,20 @@ def render_countdown_timer():
     if st.session_state.initial_countdown_time == 0 and st.session_state.remaining_time == 0:
         st.info("사이드바에서 카운트다운 시간을 설정해주세요.")
 
-    # JavaScript 타이머 표시
-    st.markdown(f"""
-    <div id="timer-display" class="main-timer time-green">
+    color_class = get_time_color_class(st.session_state.remaining_time, st.session_state.initial_countdown_time)
+    
+    timer_placeholder = st.empty()
+    timer_placeholder.markdown(f"""
+    <div class="main-timer {color_class}">
         {format_time(st.session_state.remaining_time)}
     </div>
-    <div style="background-color: #e9ecef; border-radius: 10px; height: 20px; margin: 1rem 0;">
-        <div id="progress-bar" style="background-color: #007bff; height: 100%; border-radius: 10px; width: 0%; transition: width 0.3s ease;"></div>
-    </div>
     """, unsafe_allow_html=True)
+    
+    if st.session_state.initial_countdown_time > 0:
+        progress = max(0, (st.session_state.initial_countdown_time - st.session_state.remaining_time) / st.session_state.initial_countdown_time)
+        st.progress(progress)
+    else:
+        st.progress(0.0)
     
     col1, col2, col3 = st.columns(3)
     
@@ -651,25 +579,45 @@ def render_countdown_timer():
         if st.button("▶️ 시작" if not st.session_state.timer_running else "⏸️ 일시정지", key="countdown_start_pause"):
             if st.session_state.initial_countdown_time > 0:
                 if not st.session_state.timer_running:
-                    start_js_timer(st.session_state.remaining_time, st.session_state.initial_countdown_time)
+                    st.session_state.timer_running = True
+                    st.session_state.last_update_time = time.time()
+                    st.session_state.timer_completed = False
+                    st.session_state.completion_shown = False
                 else:
-                    stop_js_timer()
+                    st.session_state.timer_running = False
                 st.rerun()
             else:
                 st.warning("먼저 사이드바에서 시간을 설정해주세요.")
 
     with col2:
         if st.button("⏹️ 정지", key="countdown_stop"):
-            stop_js_timer()
+            st.session_state.timer_running = False
             st.session_state.remaining_time = st.session_state.initial_countdown_time
+            st.session_state.timer_completed = False
+            st.session_state.completion_shown = False
             st.rerun()
     
     with col3:
         if st.button("🔄 초기화", key="countdown_reset"):
-            stop_js_timer()
+            st.session_state.timer_running = False
             st.session_state.remaining_time = 0
             st.session_state.initial_countdown_time = 0
+            st.session_state.timer_completed = False
+            st.session_state.completion_shown = False
             st.rerun()
+    
+    # 타이머 업데이트 및 완료 처리
+    if st.session_state.timer_running:
+        update_result = update_timer()
+        if update_result:  # 업데이트 또는 완료됨
+            st.rerun()
+    
+    # 완료 처리
+    if st.session_state.timer_completed and not st.session_state.completion_shown:
+        st.balloons()
+        st.success("⏰ 시간이 종료되었습니다!")
+        st.session_state.completion_shown = True
+        st.rerun()
 
 def render_pomodoro_timer():
     if 'pomodoro_work_time' not in st.session_state or st.session_state.pomodoro_work_time == 0:
@@ -691,39 +639,66 @@ def render_pomodoro_timer():
     """, unsafe_allow_html=True)
     
     total_time = st.session_state.pomodoro_work_time if is_work_time else st.session_state.pomodoro_break_time
+    if total_time == 0:
+        st.error("포모도로 시간이 0으로 설정되었습니다. 사이드바에서 시간을 설정해주세요.")
+        return
 
-    # JavaScript 타이머 표시
-    st.markdown(f"""
-    <div id="timer-display" class="main-timer time-green">
+    color_class = get_time_color_class(st.session_state.remaining_time, total_time)
+    
+    timer_placeholder = st.empty()
+    timer_placeholder.markdown(f"""
+    <div class="main-timer {color_class}">
         {format_time(st.session_state.remaining_time)}
     </div>
-    <div style="background-color: #e9ecef; border-radius: 10px; height: 20px; margin: 1rem 0;">
-        <div id="progress-bar" style="background-color: #007bff; height: 100%; border-radius: 10px; width: 0%; transition: width 0.3s ease;"></div>
-    </div>
     """, unsafe_allow_html=True)
+    
+    progress = max(0, (total_time - st.session_state.remaining_time) / total_time) if total_time > 0 else 0
+    st.progress(progress)
     
     col1, col2, col3 = st.columns(3)
     
     with col1:
         if st.button("▶️ 시작" if not st.session_state.timer_running else "⏸️ 일시정지", key="pomodoro_start_pause"):
             if not st.session_state.timer_running:
-                start_js_timer(st.session_state.remaining_time, total_time)
+                st.session_state.timer_running = True
+                st.session_state.last_update_time = time.time()
+                st.session_state.timer_completed = False
+                st.session_state.completion_shown = False
             else:
-                stop_js_timer()
+                st.session_state.timer_running = False
             st.rerun()
     
     with col2:
         if st.button("⏭️ 다음 세션", key="pomodoro_next_session"):
-            stop_js_timer()
             next_pomodoro_session()
             st.rerun()
     
     with col3:
         if st.button("🔄 초기화", key="pomodoro_reset"):
-            stop_js_timer()
+            st.session_state.timer_running = False
             st.session_state.pomodoro_cycle = 0
             st.session_state.remaining_time = st.session_state.pomodoro_work_time
+            st.session_state.timer_completed = False
+            st.session_state.completion_shown = False
             st.rerun()
+    
+    # 타이머 업데이트 및 완료 처리
+    if st.session_state.timer_running:
+        update_result = update_timer()
+        if update_result:  # 업데이트 또는 완료됨
+            st.rerun()
+    
+    # 완료 처리
+    if st.session_state.timer_completed and not st.session_state.completion_shown:
+        st.balloons()
+        if is_work_time:
+            st.success("🎉 집중 시간이 끝났습니다! 휴식을 취하세요.")
+        else:
+            st.success("☕ 휴식이 끝났습니다! 다시 집중해봅시다.")
+        
+        next_pomodoro_session()
+        st.session_state.completion_shown = True
+        st.rerun()
 
 def render_stopwatch():
     purpose = st.session_state.get('measurement_purpose', '자유 측정')
@@ -734,9 +709,9 @@ def render_stopwatch():
     </div>
     """, unsafe_allow_html=True)
     
-    # 스톱워치는 Python 방식 유지 (무한 증가)
-    if st.session_state.timer_running:
-        elapsed_time = st.session_state.total_elapsed_time + 1  # 간단한 증가
+    if st.session_state.timer_running and st.session_state.stopwatch_start_time is not None:
+        current_session_elapsed = time.time() - st.session_state.stopwatch_start_time
+        elapsed_time = st.session_state.total_elapsed_time + current_session_elapsed
     else:
         elapsed_time = st.session_state.total_elapsed_time
     
@@ -758,7 +733,8 @@ def render_stopwatch():
     else:
         color_class = "time-green"
 
-    st.markdown(f"""
+    timer_placeholder = st.empty()
+    timer_placeholder.markdown(f"""
     <div class="main-timer {color_class}">
         {format_time(elapsed_time)}
     </div>
@@ -777,25 +753,36 @@ def render_stopwatch():
     
     with col1:
         if st.button("▶️ 시작" if not st.session_state.timer_running else "⏸️ 일시정지", key="stopwatch_start_pause"):
-            st.session_state.timer_running = not st.session_state.timer_running
+            if not st.session_state.timer_running:
+                st.session_state.stopwatch_start_time = time.time()
+                st.session_state.timer_running = True
+            else:
+                if st.session_state.stopwatch_start_time is not None:
+                    st.session_state.total_elapsed_time += time.time() - st.session_state.stopwatch_start_time
+                st.session_state.stopwatch_start_time = None
+                st.session_state.timer_running = False
             st.rerun()
     
     with col2:
         if st.button("⏹️ 정지", key="stopwatch_stop"):
+            if st.session_state.timer_running and st.session_state.stopwatch_start_time is not None:
+                st.session_state.total_elapsed_time += time.time() - st.session_state.stopwatch_start_time
             st.session_state.timer_running = False
+            st.session_state.stopwatch_start_time = None
             st.rerun()
 
     with col3:
         if st.button("💾 기록 저장", key="stopwatch_save"):
-            if elapsed_time > 0:
+            final_elapsed_time = elapsed_time
+            if final_elapsed_time > 0:
                 record = {
                     'purpose': purpose,
-                    'time': elapsed_time,
+                    'time': final_elapsed_time,
                     'timestamp': datetime.datetime.now(),
-                    'target_achieved': target_time is None or (target_time is not None and elapsed_time <= target_time)
+                    'target_achieved': target_time is None or (target_time is not None and final_elapsed_time <= target_time)
                 }
                 st.session_state.stopwatch_records.append(record)
-                st.success(f"기록이 저장되었습니다! ({format_time(elapsed_time)})")
+                st.success(f"기록이 저장되었습니다! ({format_time(final_elapsed_time)})")
                 st.rerun()
             else:
                 st.info("저장할 시간이 없습니다.")
@@ -804,32 +791,47 @@ def render_stopwatch():
         if st.button("🔄 초기화", key="stopwatch_reset"):
             st.session_state.timer_running = False
             st.session_state.total_elapsed_time = 0
+            st.session_state.stopwatch_start_time = None
             st.rerun()
     
+    if elapsed_time == 0 and not st.session_state.timer_running:
+        st.markdown("---")
+        st.markdown("### 💡 이렇게 활용해보세요!")
+        examples = {
+            "학생 발표 시간": "👨‍🎓 김민수 학생이 발표를 시작할 때 ▶️를 누르고, 끝나면 ⏹️를 눌러 정확한 발표 시간을 측정하세요.",
+            "문제 풀이 시간": "📝 수학 문제를 풀기 시작할 때부터 완료까지의 시간을 측정하여 학습 속도를 파악하세요.",
+        }
+        st.info(examples.get(purpose, "⏱️ 시작 버튼을 눌러 시간 측정을 시작하고, 완료되면 정지 버튼을 눌러주세요. 기록 저장으로 결과를 저장할 수 있습니다."))
+
     if st.session_state.stopwatch_records:
-        with st.expander("📊 최근 측정 기록"):
-            for i, record in enumerate(reversed(st.session_state.stopwatch_records[-10:])):
+        with st.expander("📊 최근 측정 기록 (메인, 최근 30개)", expanded=True):
+            for i, record in enumerate(reversed(st.session_state.stopwatch_records[-30:])):
                 achieved_icon = "✅" if record.get('target_achieved', False) else ("❌" if target_time else "")
                 st.text(f"{achieved_icon} {record['purpose']}: {format_time(record['time'])} ({record['timestamp'].strftime('%H:%M')})")
 
-    # 스톱워치 자동 업데이트 (가벼운 방식)
     if st.session_state.timer_running:
-        time.sleep(1)
-        st.session_state.total_elapsed_time += 1
+        time.sleep(0.1)
         st.rerun()
 
 # 헬퍼 함수들
 def next_activity(auto_start_next=False):
+    st.session_state.timer_running = False
     if st.session_state.current_activity_index < len(st.session_state.activities) - 1:
         st.session_state.current_activity_index += 1
         current_activity = st.session_state.activities[st.session_state.current_activity_index]
         st.session_state.remaining_time = current_activity['duration'] * 60
+        st.session_state.timer_running = auto_start_next
+        st.session_state.timer_completed = False
+        st.session_state.completion_shown = False
 
 def prev_activity():
+    st.session_state.timer_running = False
     if st.session_state.current_activity_index > 0:
         st.session_state.current_activity_index -= 1
         current_activity = st.session_state.activities[st.session_state.current_activity_index]
         st.session_state.remaining_time = current_activity['duration'] * 60
+        st.session_state.timer_completed = False
+        st.session_state.completion_shown = False
 
 def reset_all_activities():
     st.session_state.current_activity_index = 0
@@ -837,9 +839,13 @@ def reset_all_activities():
         st.session_state.remaining_time = st.session_state.activities[0]['duration'] * 60
     else:
         st.session_state.remaining_time = 0
+    st.session_state.timer_running = False
+    st.session_state.timer_completed = False
+    st.session_state.completion_shown = False
     st.rerun()
 
 def next_pomodoro_session():
+    st.session_state.timer_running = False
     st.session_state.pomodoro_cycle += 1
     is_next_work_time = st.session_state.pomodoro_cycle % 2 == 0 
     
@@ -847,14 +853,17 @@ def next_pomodoro_session():
         st.session_state.remaining_time = st.session_state.pomodoro_work_time
     else:
         st.session_state.remaining_time = st.session_state.pomodoro_break_time
+    
+    st.session_state.timer_completed = False
+    st.session_state.completion_shown = False
 
 def render_tutorial():
     """처음 사용자를 위한 튜토리얼"""
     if st.session_state.show_tutorial:
         st.markdown("""
         <div class="quick-start-box">
-            <h3>🚀 클라우드 최적화 타이머!</h3>
-            <p><strong>JavaScript 기반으로 빠르고 정확한 타이밍을 제공합니다!</strong></p>
+            <h3>🚀 최적화된 타이머!</h3>
+            <p><strong>클라우드 환경에서 안정적이고 정확한 타이밍을 제공합니다!</strong></p>
         </div>
         """, unsafe_allow_html=True)
         
@@ -862,16 +871,16 @@ def render_tutorial():
             st.session_state.show_tutorial = False
             st.rerun()
 
-def render_color_guide():
-    """색상 안내"""
+def render_performance_info():
+    """성능 최적화 정보"""
     st.markdown("""
     <div class="tip-box">
-        <h4>🎨 클라우드 최적화 특징</h4>
+        <h4>⚡ 클라우드 최적화 특징</h4>
         <ul>
-            <li><strong>⚡ JavaScript 타이머:</strong> 네트워크 지연 없이 정확한 시간 계산</li>
-            <li><strong>🎯 부드러운 애니메이션:</strong> 클라이언트 사이드에서 실행되는 진행률 표시</li>
-            <li><strong>🚀 빠른 반응:</strong> 버튼 클릭 시 즉시 반응</li>
-            <li><strong>💾 안정적 상태 관리:</strong> 세션 기반 데이터 보존</li>
+            <li><strong>🎯 효율적 업데이트:</strong> 1초마다 정확한 시간 계산</li>
+            <li><strong>📱 빠른 반응:</strong> 버튼 클릭 시 즉시 반응</li>
+            <li><strong>💾 안정적 상태:</strong> 세션 기반 데이터 보존</li>
+            <li><strong>🎈 완료 알림:</strong> 타이머 종료 시 풍선 효과</li>
         </ul>
     </div>
     """, unsafe_allow_html=True)
@@ -881,41 +890,35 @@ def main():
     init_session_state()
     
     st.title("⏰ 수업 타이머 & 활동 관리 도구")
-    st.markdown("**🚀 클라우드 최적화 버전 - JavaScript 기반 정확한 타이밍!**")
+    st.markdown("**⚡ 클라우드 최적화 버전 - 안정적이고 정확한 타이밍!**")
     st.markdown("---")
     
     # 튜토리얼 표시
     render_tutorial()
     
-    # 클라우드 최적화 가이드
-    render_color_guide()
+    # 성능 정보
+    render_performance_info()
     
     render_sidebar()
     render_main_timer()
     
     st.markdown("---")
     
-    # 성능 정보
-    with st.expander("🚀 클라우드 최적화 정보"):
+    # 사용법
+    with st.expander("📖 상세 사용법"):
         st.markdown("""
-        ### ⚡ 성능 개선사항
+        ### 🎯 클라우드 최적화 타이머
         
-        **🔹 JavaScript 기반 타이머**
-        - 클라이언트 사이드에서 실행되어 네트워크 지연 제거
-        - 1초마다 정확한 카운트다운 (서버 부하 없음)
-        - 부드러운 진행률 애니메이션
+        **⚡ 주요 개선사항**
+        - **정확한 타이밍**: 1초 간격으로 정확한 카운트다운
+        - **빠른 반응**: 버튼 클릭 시 즉시 반응
+        - **안정적 동작**: 네트워크 환경에 관계없이 일정한 성능
+        - **풍선 효과**: 타이머 완료 시 확실한 시각적 피드백
         
-        **🔹 최소 리로드**
-        - 타이머 시작/정지 시에만 서버 통신
-        - 불필요한 st.rerun() 호출 제거
-        - 세션 상태 최적화
-        
-        **🔹 향상된 사용자 경험**
-        - 즉시 반응하는 버튼
-        - 끊김 없는 시간 표시
-        - 안정적인 상태 관리
-        
-        **💡 팁**: 이제 스트림릿 클라우드에서도 로컬과 동일한 성능을 경험할 수 있습니다!
+        **🔧 사용 팁**
+        - 타이머 시작 후 페이지를 새로고침하지 마세요
+        - 브라우저 탭을 바꿔도 타이머는 계속 작동합니다
+        - 완료 시 풍선과 메시지가 나타납니다
         """)
 
 if __name__ == "__main__":

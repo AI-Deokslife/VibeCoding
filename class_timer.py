@@ -219,6 +219,7 @@ def start_accurate_timer(duration_seconds):
     st.session_state.timer_start_time = time.time()
     st.session_state.timer_duration = duration_seconds
     st.session_state.remaining_time = duration_seconds
+    st.session_state.just_completed = False  # 타이머 시작 시 완료 플래그 리셋
 
 def stop_accurate_timer():
     """정확한 타이머 정지"""
@@ -278,6 +279,7 @@ def render_sidebar():
         st.session_state.initial_countdown_time = 0
         st.session_state.activities = []
         st.session_state.just_completed = False
+        st.session_state.auto_mode = False  # 모드 변경 시 자동 모드도 리셋
         if timer_mode == "구간 타이머":
             templates = get_templates()
             st.session_state.activities = templates["커스텀"].copy()
@@ -523,6 +525,7 @@ def render_segment_timer():
                 # 일시정지 시 현재 남은 시간으로 업데이트
                 st.session_state.remaining_time = calculate_remaining_time()
                 stop_accurate_timer()
+            st.session_state.just_completed = False  # 수동 조작 시 완료 플래그 리셋
             st.rerun()
     
     with col2:
@@ -554,34 +557,35 @@ def render_segment_timer():
             time.sleep(1)  # 정확히 1초 대기
             st.rerun()
         else:
-            # 타이머 완료 - 풍선 및 완료 처리
+            # 타이머 완료 - 풍선 및 완료 처리 (한 번만 실행)
             if not st.session_state.just_completed:
                 st.session_state.just_completed = True
                 stop_accurate_timer()
                 
-                # 풍선 효과 + 성공 메시지 + 소리 대체
+                # 풍선 효과 + 성공 메시지
                 st.balloons()  # 풍선 효과
                 st.success("🎉✨ 완료! ✨🎉")
                 st.info("🔔 타이머가 종료되었습니다!")
                 
                 if st.session_state.current_activity_index < len(st.session_state.activities) - 1:
                     if st.session_state.auto_mode:
-                        # 자동 모드: 자동으로 다음 활동 시작
+                        # 자동 모드: 짧은 대기 후 자동 시작
                         st.warning("🤖 자동 모드: 다음 활동을 자동으로 시작합니다!")
                         next_activity(auto_start_next=True)
+                        time.sleep(0.5)  # 짧은 대기로 깜빡임 방지
                     else:
-                        # 수동 모드: 다음 활동으로 이동하지만 시작하지 않음
+                        # 수동 모드: 긴 대기로 풍선 충분히 표시
                         st.warning("👤 수동 모드: 다음 활동으로 이동했습니다. 시작 버튼을 눌러주세요!")
                         next_activity(auto_start_next=False)
+                        time.sleep(2)  # 풍선이 보일 시간 확보
                 else:
                     st.error("🏁 모든 활동이 완료되었습니다!")
+                    time.sleep(2)
                 
-                # 풍선이 보일 시간 확보
-                time.sleep(2)
                 st.rerun()
     
-    # 완료 상태 리셋
-    if st.session_state.just_completed:
+    # 타이머가 실행 중이 아닐 때만 완료 상태 체크
+    elif st.session_state.just_completed:
         st.session_state.just_completed = False
 
 def render_countdown_timer():
@@ -624,6 +628,7 @@ def render_countdown_timer():
                     # 일시정지 시 현재 남은 시간으로 업데이트
                     st.session_state.remaining_time = calculate_remaining_time()
                     stop_accurate_timer()
+                st.session_state.just_completed = False  # 수동 조작 시 완료 플래그 리셋
                 st.rerun()
             else:
                 st.warning("먼저 사이드바에서 시간을 설정해주세요.")
@@ -647,7 +652,7 @@ def render_countdown_timer():
             time.sleep(1)  # 정확히 1초 대기
             st.rerun()
         else:
-            # 타이머 완료 - 풍선 및 완료 처리
+            # 타이머 완료 - 풍선 및 완료 처리 (한 번만 실행)
             if not st.session_state.just_completed:
                 st.session_state.just_completed = True
                 stop_accurate_timer()
@@ -661,8 +666,8 @@ def render_countdown_timer():
                 time.sleep(2)
                 st.rerun()
     
-    # 완료 상태 리셋
-    if st.session_state.just_completed:
+    # 타이머가 실행 중이 아닐 때만 완료 상태 체크
+    elif st.session_state.just_completed:
         st.session_state.just_completed = False
 
 def render_pomodoro_timer():
@@ -715,6 +720,7 @@ def render_pomodoro_timer():
                 # 일시정지 시 현재 남은 시간으로 업데이트
                 st.session_state.remaining_time = calculate_remaining_time()
                 stop_accurate_timer()
+            st.session_state.just_completed = False  # 수동 조작 시 완료 플래그 리셋
             st.rerun()
     
     with col2:
@@ -736,7 +742,7 @@ def render_pomodoro_timer():
             time.sleep(1)  # 정확히 1초 대기
             st.rerun()
         else:
-            # 타이머 완료 - 풍선 및 완료 처리
+            # 타이머 완료 - 풍선 및 완료 처리 (한 번만 실행)
             if not st.session_state.just_completed:
                 st.session_state.just_completed = True
                 stop_accurate_timer()
@@ -758,12 +764,16 @@ def render_pomodoro_timer():
                 
                 next_pomodoro_session(auto_start=st.session_state.auto_mode)
                 
-                # 풍선이 보일 시간 확보
-                time.sleep(2)
+                # 모드에 따른 대기 시간 조정
+                if st.session_state.auto_mode:
+                    time.sleep(0.5)  # 자동 모드: 짧은 대기로 깜빡임 방지
+                else:
+                    time.sleep(2)  # 수동 모드: 풍선이 보일 시간 확보
+                
                 st.rerun()
     
-    # 완료 상태 리셋
-    if st.session_state.just_completed:
+    # 타이머가 실행 중이 아닐 때만 완료 상태 체크
+    elif st.session_state.just_completed:
         st.session_state.just_completed = False
 
 def render_stopwatch():
@@ -873,6 +883,7 @@ def render_stopwatch():
 # 헬퍼 함수들
 def next_activity(auto_start_next=False):
     stop_accurate_timer()
+    st.session_state.just_completed = False  # 플래그 리셋
     if st.session_state.current_activity_index < len(st.session_state.activities) - 1:
         st.session_state.current_activity_index += 1
         current_activity = st.session_state.activities[st.session_state.current_activity_index]
@@ -882,6 +893,7 @@ def next_activity(auto_start_next=False):
 
 def prev_activity():
     stop_accurate_timer()
+    st.session_state.just_completed = False  # 플래그 리셋
     if st.session_state.current_activity_index > 0:
         st.session_state.current_activity_index -= 1
         current_activity = st.session_state.activities[st.session_state.current_activity_index]
@@ -889,6 +901,7 @@ def prev_activity():
 
 def reset_all_activities():
     stop_accurate_timer()
+    st.session_state.just_completed = False  # 플래그 리셋
     st.session_state.current_activity_index = 0
     if st.session_state.activities:
         st.session_state.remaining_time = st.session_state.activities[0]['duration'] * 60
@@ -898,6 +911,7 @@ def reset_all_activities():
 
 def next_pomodoro_session(auto_start=False):
     stop_accurate_timer()
+    st.session_state.just_completed = False  # 플래그 리셋
     st.session_state.pomodoro_cycle += 1
     is_next_work_time = st.session_state.pomodoro_cycle % 2 == 0 
     

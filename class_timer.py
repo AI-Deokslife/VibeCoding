@@ -95,7 +95,7 @@ st.markdown("""
 # 세션 상태 초기화
 def init_session_state():
     if 'timer_mode' not in st.session_state:
-        st.session_state.timer_mode = '구간 타이머'
+        st.session_state.timer_mode = '기본 카운트다운'
     
     if 'activities' not in st.session_state:
         st.session_state.activities = []
@@ -138,6 +138,13 @@ def init_session_state():
 
     if 'show_tutorial' not in st.session_state:
         st.session_state.show_tutorial = True
+    
+    # 정확한 타이머를 위한 시작 시간 기록
+    if 'timer_start_time' not in st.session_state:
+        st.session_state.timer_start_time = None
+    
+    if 'timer_duration' not in st.session_state:
+        st.session_state.timer_duration = 0
 
 # 사전 정의된 템플릿
 def get_templates():
@@ -183,6 +190,35 @@ def get_templates():
         ]
     }
 
+# 정확한 타이머를 위한 시간 계산 함수
+def calculate_remaining_time():
+    """로컬 시계 기준으로 정확한 남은 시간 계산"""
+    if (st.session_state.timer_running and 
+        st.session_state.timer_start_time is not None and 
+        st.session_state.timer_duration > 0):
+        
+        current_time = time.time()
+        elapsed_time = current_time - st.session_state.timer_start_time
+        remaining = st.session_state.timer_duration - elapsed_time
+        
+        # 0 이하로 내려가지 않도록 제한
+        return max(0, int(remaining))
+    
+    return st.session_state.remaining_time
+
+def start_accurate_timer(duration_seconds):
+    """정확한 타이머 시작"""
+    st.session_state.timer_running = True
+    st.session_state.timer_start_time = time.time()
+    st.session_state.timer_duration = duration_seconds
+    st.session_state.remaining_time = duration_seconds
+
+def stop_accurate_timer():
+    """정확한 타이머 정지"""
+    st.session_state.timer_running = False
+    st.session_state.timer_start_time = None
+    st.session_state.timer_duration = 0
+
 # 시간 포맷팅 함수
 def format_time(seconds):
     if seconds < 0:
@@ -219,13 +255,13 @@ def render_sidebar():
     
     timer_mode = st.sidebar.selectbox(
         "타이머 모드",
-        ["구간 타이머", "기본 카운트다운", "포모도로 타이머", "무한 스톱워치"],
-        index=["구간 타이머", "기본 카운트다운", "포모도로 타이머", "무한 스톱워치"].index(st.session_state.timer_mode)
+        ["기본 카운트다운", "구간 타이머", "포모도로 타이머", "무한 스톱워치"],
+        index=["기본 카운트다운", "구간 타이머", "포모도로 타이머", "무한 스톱워치"].index(st.session_state.timer_mode)
     )
     
     if timer_mode != st.session_state.timer_mode:
+        stop_accurate_timer()
         st.session_state.timer_mode = timer_mode
-        st.session_state.timer_running = False
         st.session_state.remaining_time = 0
         st.session_state.current_activity_index = 0
         st.session_state.total_elapsed_time = 0
@@ -240,10 +276,10 @@ def render_sidebar():
                 st.session_state.remaining_time = st.session_state.activities[0]['duration'] * 60
         st.rerun()
     
-    if st.session_state.timer_mode == "구간 타이머":
-        render_segment_timer_settings()
-    elif st.session_state.timer_mode == "기본 카운트다운":
+    if st.session_state.timer_mode == "기본 카운트다운":
         render_countdown_settings()
+    elif st.session_state.timer_mode == "구간 타이머":
+        render_segment_timer_settings()
     elif st.session_state.timer_mode == "포모도로 타이머":
         render_pomodoro_settings()
     elif st.session_state.timer_mode == "무한 스톱워치":
@@ -260,9 +296,9 @@ def render_segment_timer_settings():
     
     if template_choice != "커스텀":
         if st.sidebar.button("템플릿 불러오기"):
+            stop_accurate_timer()
             st.session_state.activities = templates[template_choice].copy()
             st.session_state.current_activity_index = 0
-            st.session_state.timer_running = False
             if st.session_state.activities:
                 st.session_state.remaining_time = st.session_state.activities[0]['duration'] * 60
             else:
@@ -323,9 +359,9 @@ def render_countdown_settings():
     total_seconds = hours * 3600 + minutes * 60 + seconds
     
     if st.sidebar.button("시간 설정"):
+        stop_accurate_timer()
         st.session_state.remaining_time = total_seconds
         st.session_state.initial_countdown_time = total_seconds
-        st.session_state.timer_running = False
         st.rerun()
 
 def render_pomodoro_settings():
@@ -336,11 +372,11 @@ def render_pomodoro_settings():
     break_time = st.sidebar.number_input("휴식 시간 (분)", min_value=1, value=st.session_state.pomodoro_break_time // 60, key="pomodoro_break_time_input")
     
     if st.sidebar.button("포모도로 시작/설정"):
+        stop_accurate_timer()
         st.session_state.pomodoro_work_time = work_time * 60
         st.session_state.pomodoro_break_time = break_time * 60
         st.session_state.pomodoro_cycle = 0
         st.session_state.remaining_time = st.session_state.pomodoro_work_time
-        st.session_state.timer_running = False
         st.rerun()
 
 def render_stopwatch_settings():
@@ -379,10 +415,10 @@ def render_stopwatch_settings():
 
 # 메인 타이머 화면
 def render_main_timer():
-    if st.session_state.timer_mode == "구간 타이머":
-        render_segment_timer()
-    elif st.session_state.timer_mode == "기본 카운트다운":
+    if st.session_state.timer_mode == "기본 카운트다운":
         render_countdown_timer()
+    elif st.session_state.timer_mode == "구간 타이머":
+        render_segment_timer()
     elif st.session_state.timer_mode == "포모도로 타이머":
         render_pomodoro_timer()
     elif st.session_state.timer_mode == "무한 스톱워치":
@@ -417,7 +453,12 @@ def render_segment_timer():
     """, unsafe_allow_html=True)
     
     total_time_for_current_activity = current_activity['duration'] * 60
-    if st.session_state.remaining_time > total_time_for_current_activity and not st.session_state.timer_running:
+    
+    # 정확한 남은 시간 계산
+    if st.session_state.timer_running:
+        current_remaining = calculate_remaining_time()
+        st.session_state.remaining_time = current_remaining
+    elif st.session_state.remaining_time > total_time_for_current_activity:
         st.session_state.remaining_time = total_time_for_current_activity
 
     color_class = get_time_color_class(st.session_state.remaining_time, total_time_for_current_activity)
@@ -435,38 +476,45 @@ def render_segment_timer():
     
     with col1:
         if st.button("▶️ 시작" if not st.session_state.timer_running else "⏸️ 일시정지", key="segment_start_pause"):
-            st.session_state.timer_running = not st.session_state.timer_running
+            if not st.session_state.timer_running:
+                start_accurate_timer(st.session_state.remaining_time)
+            else:
+                # 일시정지 시 현재 남은 시간으로 업데이트
+                st.session_state.remaining_time = calculate_remaining_time()
+                stop_accurate_timer()
             st.rerun()
     
     with col2:
         if st.button("⏹️ 정지", key="segment_stop"):
-            st.session_state.timer_running = False
+            stop_accurate_timer()
             st.session_state.remaining_time = current_activity['duration'] * 60
             st.rerun()
     
     with col3:
         if st.button("⏭️ 다음 활동", key="segment_next"):
+            stop_accurate_timer()
             next_activity()
             st.rerun()
     
     with col4:
         if st.button("⏮️ 이전 활동", key="segment_prev"):
+            stop_accurate_timer()
             prev_activity()
             st.rerun()
     
     with col5:
         if st.button("🔄 전체 초기화", key="segment_reset_all"):
+            stop_accurate_timer()
             reset_all_activities()
     
-    # 간단한 타이머 로직
+    # 타이머 실행 중일 때 자동 업데이트
     if st.session_state.timer_running:
         if st.session_state.remaining_time > 0:
-            time.sleep(0.8)  # 0.8초 대기 (조금 더 빠른 반응)
-            st.session_state.remaining_time -= 1
+            time.sleep(1)  # 정확히 1초 대기
             st.rerun()
         else:
             # 타이머 완료
-            st.session_state.timer_running = False
+            stop_accurate_timer()
             st.balloons()
             if st.session_state.current_activity_index < len(st.session_state.activities) - 1:
                 next_activity(auto_start_next=False)
@@ -484,6 +532,11 @@ def render_countdown_timer():
     
     if st.session_state.initial_countdown_time == 0 and st.session_state.remaining_time == 0:
         st.info("사이드바에서 카운트다운 시간을 설정해주세요.")
+
+    # 정확한 남은 시간 계산
+    if st.session_state.timer_running:
+        current_remaining = calculate_remaining_time()
+        st.session_state.remaining_time = current_remaining
 
     color_class = get_time_color_class(st.session_state.remaining_time, st.session_state.initial_countdown_time)
     
@@ -504,33 +557,37 @@ def render_countdown_timer():
     with col1:
         if st.button("▶️ 시작" if not st.session_state.timer_running else "⏸️ 일시정지", key="countdown_start_pause"):
             if st.session_state.initial_countdown_time > 0:
-                st.session_state.timer_running = not st.session_state.timer_running
+                if not st.session_state.timer_running:
+                    start_accurate_timer(st.session_state.remaining_time)
+                else:
+                    # 일시정지 시 현재 남은 시간으로 업데이트
+                    st.session_state.remaining_time = calculate_remaining_time()
+                    stop_accurate_timer()
                 st.rerun()
             else:
                 st.warning("먼저 사이드바에서 시간을 설정해주세요.")
 
     with col2:
         if st.button("⏹️ 정지", key="countdown_stop"):
-            st.session_state.timer_running = False
+            stop_accurate_timer()
             st.session_state.remaining_time = st.session_state.initial_countdown_time
             st.rerun()
     
     with col3:
         if st.button("🔄 초기화", key="countdown_reset"):
-            st.session_state.timer_running = False
+            stop_accurate_timer()
             st.session_state.remaining_time = 0
             st.session_state.initial_countdown_time = 0
             st.rerun()
     
-    # 간단한 타이머 로직
+    # 타이머 실행 중일 때 자동 업데이트
     if st.session_state.timer_running:
         if st.session_state.remaining_time > 0:
-            time.sleep(0.8)
-            st.session_state.remaining_time -= 1
+            time.sleep(1)  # 정확히 1초 대기
             st.rerun()
         else:
             # 타이머 완료
-            st.session_state.timer_running = False
+            stop_accurate_timer()
             st.balloons()
             st.success("⏰ 시간이 종료되었습니다!")
             st.rerun()
@@ -559,6 +616,11 @@ def render_pomodoro_timer():
         st.error("포모도로 시간이 0으로 설정되었습니다. 사이드바에서 시간을 설정해주세요.")
         return
 
+    # 정확한 남은 시간 계산
+    if st.session_state.timer_running:
+        current_remaining = calculate_remaining_time()
+        st.session_state.remaining_time = current_remaining
+
     color_class = get_time_color_class(st.session_state.remaining_time, total_time)
     
     st.markdown(f"""
@@ -574,30 +636,35 @@ def render_pomodoro_timer():
     
     with col1:
         if st.button("▶️ 시작" if not st.session_state.timer_running else "⏸️ 일시정지", key="pomodoro_start_pause"):
-            st.session_state.timer_running = not st.session_state.timer_running
+            if not st.session_state.timer_running:
+                start_accurate_timer(st.session_state.remaining_time)
+            else:
+                # 일시정지 시 현재 남은 시간으로 업데이트
+                st.session_state.remaining_time = calculate_remaining_time()
+                stop_accurate_timer()
             st.rerun()
     
     with col2:
         if st.button("⏭️ 다음 세션", key="pomodoro_next_session"):
+            stop_accurate_timer()
             next_pomodoro_session()
             st.rerun()
     
     with col3:
         if st.button("🔄 초기화", key="pomodoro_reset"):
-            st.session_state.timer_running = False
+            stop_accurate_timer()
             st.session_state.pomodoro_cycle = 0
             st.session_state.remaining_time = st.session_state.pomodoro_work_time
             st.rerun()
     
-    # 간단한 타이머 로직
+    # 타이머 실행 중일 때 자동 업데이트
     if st.session_state.timer_running:
         if st.session_state.remaining_time > 0:
-            time.sleep(0.8)
-            st.session_state.remaining_time -= 1
+            time.sleep(1)  # 정확히 1초 대기
             st.rerun()
         else:
             # 타이머 완료
-            st.session_state.timer_running = False
+            stop_accurate_timer()
             st.balloons()
             if is_work_time:
                 st.success("🎉 집중 시간이 끝났습니다! 휴식을 취하세요.")
@@ -713,31 +780,32 @@ def render_stopwatch():
 
 # 헬퍼 함수들
 def next_activity(auto_start_next=False):
-    st.session_state.timer_running = False
+    stop_accurate_timer()
     if st.session_state.current_activity_index < len(st.session_state.activities) - 1:
         st.session_state.current_activity_index += 1
         current_activity = st.session_state.activities[st.session_state.current_activity_index]
         st.session_state.remaining_time = current_activity['duration'] * 60
-        st.session_state.timer_running = auto_start_next
+        if auto_start_next:
+            start_accurate_timer(st.session_state.remaining_time)
 
 def prev_activity():
-    st.session_state.timer_running = False
+    stop_accurate_timer()
     if st.session_state.current_activity_index > 0:
         st.session_state.current_activity_index -= 1
         current_activity = st.session_state.activities[st.session_state.current_activity_index]
         st.session_state.remaining_time = current_activity['duration'] * 60
 
 def reset_all_activities():
+    stop_accurate_timer()
     st.session_state.current_activity_index = 0
     if st.session_state.activities:
         st.session_state.remaining_time = st.session_state.activities[0]['duration'] * 60
     else:
         st.session_state.remaining_time = 0
-    st.session_state.timer_running = False
     st.rerun()
 
 def next_pomodoro_session():
-    st.session_state.timer_running = False
+    stop_accurate_timer()
     st.session_state.pomodoro_cycle += 1
     is_next_work_time = st.session_state.pomodoro_cycle % 2 == 0 
     
@@ -751,8 +819,8 @@ def render_tutorial():
     if st.session_state.show_tutorial:
         st.markdown("""
         <div class="quick-start-box">
-            <h3>🚀 단순하고 안정적인 타이머!</h3>
-            <p><strong>가장 기본적이고 확실한 방식으로 작동합니다!</strong></p>
+            <h3>🚀 정확한 로컬 시계 기반 타이머!</h3>
+            <p><strong>실제 시간을 기준으로 정확하게 작동하는 타이머입니다!</strong></p>
         </div>
         """, unsafe_allow_html=True)
         
@@ -764,12 +832,12 @@ def render_performance_info():
     """성능 정보"""
     st.markdown("""
     <div class="tip-box">
-        <h4>⚡ 단순하고 확실한 작동</h4>
+        <h4>⏰ 정확한 시간 계산 방식</h4>
         <ul>
-            <li><strong>🎯 기본 방식:</strong> 가장 단순하고 안정적인 타이머</li>
-            <li><strong>📱 즉시 반응:</strong> 버튼 클릭 시 바로 반응</li>
+            <li><strong>🎯 로컬 시계 기준:</strong> 컴퓨터의 실제 시간을 기준으로 계산</li>
+            <li><strong>📱 네트워크 독립:</strong> 인터넷 속도와 관계없이 정확한 타이밍</li>
             <li><strong>🎈 확실한 완료:</strong> 타이머 종료 시 풍선 + 메시지</li>
-            <li><strong>⏰ 0.8초 간격:</strong> 빠른 업데이트로 반응성 향상</li>
+            <li><strong>⏸️ 정확한 일시정지:</strong> 일시정지 후 재시작해도 정확한 시간 유지</li>
         </ul>
     </div>
     """, unsafe_allow_html=True)
@@ -779,7 +847,7 @@ def main():
     init_session_state()
     
     st.title("⏰ 수업 타이머 & 활동 관리 도구")
-    st.markdown("**🔧 단순하고 확실한 버전 - 기본에 충실한 타이머!**")
+    st.markdown("**⏰ 정확한 로컬 시계 기반 타이머 - 실제 시간으로 정확하게!**")
     st.markdown("---")
     
     # 튜토리얼 표시
@@ -796,19 +864,19 @@ def main():
     # 사용법
     with st.expander("📖 사용법"):
         st.markdown("""
-        ### 🎯 단순하고 확실한 타이머
+        ### ⏰ 정확한 로컬 시계 기반 타이머
         
         **✅ 작동 확인됨**
+        - **기본 카운트다운**: 설정 시간부터 정확한 역순 카운트  
         - **구간 타이머**: 활동별 시간 관리
-        - **카운트다운**: 설정 시간부터 역순 카운트  
         - **포모도로**: 집중/휴식 사이클 관리
         - **스톱워치**: 시간 측정 및 기록
         
-        **⚡ 특징**
-        - 0.8초 간격으로 빠른 업데이트
+        **⏰ 정확한 시간 계산 특징**
+        - 컴퓨터의 실제 시계를 기준으로 계산
+        - 네트워크 지연과 관계없이 정확한 타이밍
+        - 일시정지 후 재시작해도 정확한 시간 유지
         - 타이머 완료 시 풍선 효과
-        - 즉시 반응하는 버튼
-        - 안정적인 시간 계산
         """)
 
 if __name__ == "__main__":

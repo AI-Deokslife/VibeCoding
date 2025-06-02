@@ -64,8 +64,7 @@ st.markdown("""
     .finished {
         background-color: #dc3545;
         color: white;
-        animation: blink 0.5s 2;
-        animation-fill-mode: forwards;
+        /* 깜빡임 애니메이션 제거 */
     }
     
     @keyframes blink {
@@ -145,6 +144,10 @@ def init_session_state():
     
     if 'timer_duration' not in st.session_state:
         st.session_state.timer_duration = 0
+    
+    # 완료 상태 관리
+    if 'just_completed' not in st.session_state:
+        st.session_state.just_completed = False
 
 # 사전 정의된 템플릿
 def get_templates():
@@ -218,6 +221,7 @@ def stop_accurate_timer():
     st.session_state.timer_running = False
     st.session_state.timer_start_time = None
     st.session_state.timer_duration = 0
+    st.session_state.just_completed = False
 
 # 시간 포맷팅 함수
 def format_time(seconds):
@@ -269,6 +273,7 @@ def render_sidebar():
         st.session_state.pomodoro_cycle = 0
         st.session_state.initial_countdown_time = 0
         st.session_state.activities = []
+        st.session_state.just_completed = False
         if timer_mode == "구간 타이머":
             templates = get_templates()
             st.session_state.activities = templates["커스텀"].copy()
@@ -507,21 +512,28 @@ def render_segment_timer():
             stop_accurate_timer()
             reset_all_activities()
     
-    # 타이머 실행 중일 때 자동 업데이트
+    # 타이머 실행 중일 때 자동 업데이트 및 완료 처리
     if st.session_state.timer_running:
         if st.session_state.remaining_time > 0:
             time.sleep(1)  # 정확히 1초 대기
             st.rerun()
         else:
-            # 타이머 완료
-            stop_accurate_timer()
-            st.balloons()
-            if st.session_state.current_activity_index < len(st.session_state.activities) - 1:
-                next_activity(auto_start_next=False)
-                st.success(f"'{current_activity['name']}' 활동 완료! 다음 활동으로 이동합니다.")
-            else:
-                st.success("🎉 모든 활동이 완료되었습니다!")
-            st.rerun()
+            # 타이머 완료 - 풍선 먼저 표시
+            if not st.session_state.just_completed:
+                st.session_state.just_completed = True
+                stop_accurate_timer()
+                st.balloons()  # 풍선 효과
+                st.rerun()
+    
+    # 완료 후 메시지 및 다음 단계 처리
+    if st.session_state.just_completed:
+        if st.session_state.current_activity_index < len(st.session_state.activities) - 1:
+            next_activity(auto_start_next=False)
+            st.success(f"'{current_activity['name']}' 활동 완료! 다음 활동으로 이동합니다.")
+        else:
+            st.success("🎉 모든 활동이 완료되었습니다!")
+        st.session_state.just_completed = False
+        st.rerun()
 
 def render_countdown_timer():
     st.markdown("""
@@ -580,17 +592,24 @@ def render_countdown_timer():
             st.session_state.initial_countdown_time = 0
             st.rerun()
     
-    # 타이머 실행 중일 때 자동 업데이트
+    # 타이머 실행 중일 때 자동 업데이트 및 완료 처리
     if st.session_state.timer_running:
         if st.session_state.remaining_time > 0:
             time.sleep(1)  # 정확히 1초 대기
             st.rerun()
         else:
-            # 타이머 완료
-            stop_accurate_timer()
-            st.balloons()
-            st.success("⏰ 시간이 종료되었습니다!")
-            st.rerun()
+            # 타이머 완료 - 풍선 먼저 표시
+            if not st.session_state.just_completed:
+                st.session_state.just_completed = True
+                stop_accurate_timer()
+                st.balloons()  # 풍선 효과
+                st.rerun()
+    
+    # 완료 후 메시지 처리
+    if st.session_state.just_completed:
+        st.success("⏰ 시간이 종료되었습니다!")
+        st.session_state.just_completed = False
+        st.rerun()
 
 def render_pomodoro_timer():
     if 'pomodoro_work_time' not in st.session_state or st.session_state.pomodoro_work_time == 0:
@@ -657,22 +676,29 @@ def render_pomodoro_timer():
             st.session_state.remaining_time = st.session_state.pomodoro_work_time
             st.rerun()
     
-    # 타이머 실행 중일 때 자동 업데이트
+    # 타이머 실행 중일 때 자동 업데이트 및 완료 처리
     if st.session_state.timer_running:
         if st.session_state.remaining_time > 0:
             time.sleep(1)  # 정확히 1초 대기
             st.rerun()
         else:
-            # 타이머 완료
-            stop_accurate_timer()
-            st.balloons()
-            if is_work_time:
-                st.success("🎉 집중 시간이 끝났습니다! 휴식을 취하세요.")
-            else:
-                st.success("☕ 휴식이 끝났습니다! 다시 집중해봅시다.")
-            
-            next_pomodoro_session()
-            st.rerun()
+            # 타이머 완료 - 풍선 먼저 표시
+            if not st.session_state.just_completed:
+                st.session_state.just_completed = True
+                stop_accurate_timer()
+                st.balloons()  # 풍선 효과
+                st.rerun()
+    
+    # 완료 후 메시지 및 다음 세션 처리
+    if st.session_state.just_completed:
+        if is_work_time:
+            st.success("🎉 집중 시간이 끝났습니다! 휴식을 취하세요.")
+        else:
+            st.success("☕ 휴식이 끝났습니다! 다시 집중해봅시다.")
+        
+        next_pomodoro_session()
+        st.session_state.just_completed = False
+        st.rerun()
 
 def render_stopwatch():
     purpose = st.session_state.get('measurement_purpose', '자유 측정')

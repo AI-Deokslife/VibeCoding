@@ -518,22 +518,29 @@ def render_segment_timer():
             time.sleep(1)  # 정확히 1초 대기
             st.rerun()
         else:
-            # 타이머 완료 - 풍선 먼저 표시
+            # 타이머 완료 - 풍선 및 완료 처리
             if not st.session_state.just_completed:
                 st.session_state.just_completed = True
                 stop_accurate_timer()
+                
+                # 풍선 효과 + 성공 메시지 + 소리 대체
                 st.balloons()  # 풍선 효과
+                st.success("🎉✨ 완료! ✨🎉")
+                st.info("🔔 타이머가 종료되었습니다!")
+                
+                if st.session_state.current_activity_index < len(st.session_state.activities) - 1:
+                    st.warning("➡️ 다음 활동으로 이동합니다!")
+                    next_activity(auto_start_next=False)
+                else:
+                    st.error("🏁 모든 활동이 완료되었습니다!")
+                
+                # 풍선이 보일 시간 확보
+                time.sleep(2)
                 st.rerun()
     
-    # 완료 후 메시지 및 다음 단계 처리
+    # 완료 상태 리셋
     if st.session_state.just_completed:
-        if st.session_state.current_activity_index < len(st.session_state.activities) - 1:
-            next_activity(auto_start_next=False)
-            st.success(f"'{current_activity['name']}' 활동 완료! 다음 활동으로 이동합니다.")
-        else:
-            st.success("🎉 모든 활동이 완료되었습니다!")
         st.session_state.just_completed = False
-        st.rerun()
 
 def render_countdown_timer():
     st.markdown("""
@@ -598,18 +605,23 @@ def render_countdown_timer():
             time.sleep(1)  # 정확히 1초 대기
             st.rerun()
         else:
-            # 타이머 완료 - 풍선 먼저 표시
+            # 타이머 완료 - 풍선 및 완료 처리
             if not st.session_state.just_completed:
                 st.session_state.just_completed = True
                 stop_accurate_timer()
+                
+                # 풍선 효과 + 성공 메시지
                 st.balloons()  # 풍선 효과
+                st.success("🎉✨ 시간 종료! ✨🎉")
+                st.info("🔔 카운트다운이 완료되었습니다!")
+                
+                # 풍선이 보일 시간 확보
+                time.sleep(2)
                 st.rerun()
     
-    # 완료 후 메시지 처리
+    # 완료 상태 리셋
     if st.session_state.just_completed:
-        st.success("⏰ 시간이 종료되었습니다!")
         st.session_state.just_completed = False
-        st.rerun()
 
 def render_pomodoro_timer():
     if 'pomodoro_work_time' not in st.session_state or st.session_state.pomodoro_work_time == 0:
@@ -682,23 +694,29 @@ def render_pomodoro_timer():
             time.sleep(1)  # 정확히 1초 대기
             st.rerun()
         else:
-            # 타이머 완료 - 풍선 먼저 표시
+            # 타이머 완료 - 풍선 및 완료 처리
             if not st.session_state.just_completed:
                 st.session_state.just_completed = True
                 stop_accurate_timer()
+                
+                # 풍선 효과 + 성공 메시지
                 st.balloons()  # 풍선 효과
+                if is_work_time:
+                    st.success("🎉✨ 집중 시간 완료! ✨🎉")
+                    st.info("☕ 이제 휴식을 취하세요!")
+                else:
+                    st.success("🎉✨ 휴식 시간 완료! ✨🎉")  
+                    st.info("🍅 다시 집중해봅시다!")
+                
+                next_pomodoro_session()
+                
+                # 풍선이 보일 시간 확보
+                time.sleep(2)
                 st.rerun()
     
-    # 완료 후 메시지 및 다음 세션 처리
+    # 완료 상태 리셋
     if st.session_state.just_completed:
-        if is_work_time:
-            st.success("🎉 집중 시간이 끝났습니다! 휴식을 취하세요.")
-        else:
-            st.success("☕ 휴식이 끝났습니다! 다시 집중해봅시다.")
-        
-        next_pomodoro_session()
         st.session_state.just_completed = False
-        st.rerun()
 
 def render_stopwatch():
     purpose = st.session_state.get('measurement_purpose', '자유 측정')
@@ -847,6 +865,7 @@ def render_tutorial():
         <div class="quick-start-box">
             <h3>🚀 정확한 로컬 시계 기반 타이머!</h3>
             <p><strong>실제 시간을 기준으로 정확하게 작동하는 타이머입니다!</strong></p>
+            <p>🎈 <strong>풍선 효과:</strong> 타이머 완료 시 화면 전체에서 색깔 풍선들이 아래에서 위로 올라갑니다!</p>
         </div>
         """, unsafe_allow_html=True)
         
@@ -867,6 +886,20 @@ def render_performance_info():
         </ul>
     </div>
     """, unsafe_allow_html=True)
+    
+    # 풍선 테스트 버튼 추가
+    st.markdown("### 🎈 풍선 효과 테스트")
+    if st.button("🎈 풍선 테스트 (즉시 실행)", key="balloon_test"):
+        st.balloons()
+        st.success("🎉 풍선이 보이셨나요? 위쪽을 확인해보세요!")
+        st.info("💡 풍선이 안 보인다면 브라우저 애니메이션 설정을 확인해보세요.")
+    
+    if st.button("🎈 풍선 테스트 (2초 후)", key="balloon_test_delayed"):
+        with st.spinner("풍선 준비 중..."):
+            time.sleep(2)
+        st.balloons()
+        st.success("🎉 이번엔 풍선이 보이셨나요?")
+        st.info("💡 풍선은 화면 전체에서 아래에서 위로 올라가야 합니다.")
 
 # 메인 애플리케이션
 def main():
@@ -902,7 +935,16 @@ def main():
         - 컴퓨터의 실제 시계를 기준으로 계산
         - 네트워크 지연과 관계없이 정확한 타이밍
         - 일시정지 후 재시작해도 정확한 시간 유지
-        - 타이머 완료 시 풍선 효과
+        
+        **🎈 완료 알림 개선**
+        - 타이머 완료 시 화면 전체에 풍선 효과 (2초간 표시)
+        - 다양한 색상의 성공 메시지
+        - 깜빡임 제거로 깔끔한 완료 표시
+        
+        **💡 풍선 안 보이는 경우**
+        - 위의 '풍선 테스트' 버튼으로 확인해보세요
+        - 브라우저 애니메이션 설정 확인
+        - 다른 브라우저로 테스트 권장
         """)
 
 if __name__ == "__main__":
